@@ -172,6 +172,12 @@ async function sendMessage() {
   const text = document.getElementById('messageText').value.trim();
   if (!text) return alert('Введите сообщение');
 
+  console.log('Отправка сообщения...', {
+    text,
+    user_id: currentUser.id,
+    created_at: new Date().toISOString()
+  });
+
   const { error } = await supabaseClient.from('messages').insert({
     text,
     user_id: currentUser.id,
@@ -179,12 +185,14 @@ async function sendMessage() {
   });
 
   if (error) {
-    console.error('Ошибка:', error);
-    alert('Ошибка отправки');
+    console.error('Ошибка Supabase:', error);
+    alert(`Ошибка: ${error.message} (Код: ${error.code})`);
   } else {
     document.getElementById('messageText').value = '';
+    console.log('Сообщение отправлено!');
   }
 }
+
 
 async function loadMessages() {
   const { data, error } = await supabaseClient
@@ -237,3 +245,4 @@ function startRealtime() {
     }, () => loadMessages())
     .subscribe();
 }
+
