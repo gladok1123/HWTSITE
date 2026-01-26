@@ -33,7 +33,7 @@ window.addEventListener('load', async () => {
   });
 });
 
-// === НАВИГАЦИЯ (кнопки / аватар) ===
+// === НАВИГАЦИЯ ===
 function setupNav() {
   if (currentUser) {
     const firstLetter = (currentUser.email?.split('@')[0]?.[0] || 'U').toUpperCase();
@@ -204,21 +204,31 @@ async function createPost() {
 }
 
 async function loadPosts() {
+  console.log('Загрузка постов...');
+
   const { data, error } = await supabaseClient
     .from('posts')
-    .select('*, author:users(email)')
+    .select('*') // ❌ Убрали проблемный JOIN
     .order('created_at', { ascending: false });
 
   if (error) {
-    console.error(error);
+    console.error('Ошибка загрузки постов:', error);
+    alert('Ошибка: ' + error.message);
     return;
   }
+
+  console.log('Загруженные посты:', data);
 
   const postList = document.getElementById('postList');
   postList.innerHTML = '';
 
+  if (data.length === 0) {
+    postList.innerHTML = '<p style="color:#777; text-align:center; padding:16px;">Пока нет постов</p>';
+    return;
+  }
+
   data.forEach(post => {
-    const name = post.author?.email.split('@')[0];
+    const name = post.user_id ? post.user_id.slice(0, 8) : 'Аноним';
     const firstLetter = name[0].toUpperCase();
 
     const postEl = document.createElement('div');
@@ -231,7 +241,7 @@ async function loadPosts() {
           <span class="post-time">${new Date(post.created_at).toLocaleString('ru')}</span>
         </div>
       </div>
-      <div class="post-text">${post.text}</div>
+      <div class="post-text">${post.text || ''}</div>
       ${post.media_url ? `<img src="${post.media_url}" class="post-media">` : ''}
       <div class="post-actions">
         <span style="cursor:pointer">❤️ Нравится</span>
