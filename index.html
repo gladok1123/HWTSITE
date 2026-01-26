@@ -3,21 +3,28 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>HWT</title>
+  <title>Чат</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
   <div class="app" id="app">
     <!-- Header -->
     <header class="header">
-      <h1 class="logo">HWT</h1>
+      <h1 class="logo">💬 Чат</h1>
       <nav id="nav">
-        <!-- Кнопки или аватар будут здесь -->
+        <span>Аноним</span>
       </nav>
     </header>
 
     <!-- Основной экран -->
-    <main class="main" id="main"></main>
+    <main class="main" id="main">
+      <div class="form">
+        <h2>Написать сообщение</h2>
+        <textarea id="messageText" placeholder="Введите сообщение..." rows="3"></textarea>
+        <button onclick="sendMessage()">Отправить</button>
+      </div>
+      <div class="post-list" id="messageList"></div>
+    </main>
   </div>
 
   <!-- Подключаем Supabase -->
