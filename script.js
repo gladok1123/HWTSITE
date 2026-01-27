@@ -12,7 +12,7 @@ let activeDM = null;
 
 const recentDMs = new Map(); // userId → { email, avatar_color }
 
-// DOM
+// DOM-элементы (могут быть null при старте)
 const messageList = document.getElementById('messageList');
 const chatContainer = document.querySelector('.chat-container');
 const userList = document.getElementById('userList');
@@ -22,7 +22,7 @@ const chatTitle = document.getElementById('chatTitle');
 const backBtn = document.getElementById('backBtn');
 const dmSearchInput = document.getElementById('dmSearchInput');
 
-// === ГЛОБАЛЬНЫЕ ФУНКЦИИ (доступны из HTML) ===
+// === ГЛОБАЛЬНЫЕ ФУНКЦИИ (для HTML) ===
 function showLogin() {
   showModal('Вход', `
     <input id="loginEmail" type="email" placeholder="Email">
@@ -54,7 +54,7 @@ window.addEventListener('load', async () => {
       showAuthScreen();
     }
 
-    // Отслеживаем изменения состояния авторизации
+    // Отслеживаем вход/выход
     supabaseClient.auth.onAuthStateChange((event, session) => {
       currentUser = session?.user || null;
       if (event === 'SIGNED_IN') {
@@ -69,13 +69,17 @@ window.addEventListener('load', async () => {
         showAuthScreen();
       }
     });
+
   } catch (err) {
     console.error('Ошибка инициализации:', err);
+    showAuthScreen();
   }
 });
 
 // === ЗАГРУЗКА ЦВЕТА АВАТАРКИ ===
 async function loadUserSettings() {
+  if (!currentUser) return; // 🔐 Защита от null
+
   try {
     const { data, error } = await supabaseClient
       .from('users')
@@ -95,8 +99,10 @@ async function loadUserSettings() {
   }
 }
 
-// === СОХРАНЕНИЕ ПОЛЬЗОВАТЕЛЯ В БАЗЕ ===
+// === СОХРАНЕНИЕ ПОЛЬЗОВАТЕЛЯ ===
 async function ensureUserRecord(color) {
+  if (!currentUser) return;
+
   const { error } = await supabaseClient.from('users').upsert({
     id: currentUser.id,
     email: currentUser.email,
@@ -130,9 +136,9 @@ function showMainApp() {
 document.getElementById('sendBtn')?.addEventListener('click', async () => {
   const textarea = document.getElementById('messageText');
   const text = textarea?.value?.trim();
-  if (!text) return;
+  if (!text || !currentUser) return;
 
-  const sender = currentUser?.email?.split('@')[0] || 'Аноним';
+  const sender = currentUser.email.split('@')[0];
 
   const { error } = await supabaseClient.from('messages').insert([
     {
@@ -153,7 +159,7 @@ document.getElementById('sendBtn')?.addEventListener('click', async () => {
   }
 });
 
-// === РЕГУЛИРОВКА ВЫСОТЫ ПОЛЯ ===
+// === РЕГУЛИРОВКА ВЫСОТЫ ТЕКСТОВОГО ПОЛЯ ===
 function adjustTextareaHeight(el) {
   el.style.height = 'auto';
   el.style.height = Math.min(el.scrollHeight, 120) + 'px';
@@ -165,7 +171,7 @@ document.getElementById('messageText')?.addEventListener('input', function () {
 
 // === ЗАГРУЗКА СООБЩЕНИЙ ===
 async function loadMessages() {
-  if (!messageList) return;
+  if (!messageList || !currentUser) return;
 
   let query = supabaseClient
     .from('messages')
@@ -186,6 +192,7 @@ async function loadMessages() {
     if (error) throw error;
 
     messageList.innerHTML = '';
+
     if (data.length === 0) {
       const empty = document.createElement('div');
       empty.textContent = 'Нет сообщений';
@@ -196,9 +203,11 @@ async function loadMessages() {
     } else {
       data.forEach(addMessageToDOM);
     }
+
     scrollToBottom();
   } catch (err) {
-    messageList.innerHTML = '<div style="color:red">Ошибка</div>';
+    console.error('Ошибка загрузки сообщений:', err);
+    messageList.innerHTML = '<div style="color:red">Ошибка загрузки</div>';
   }
 }
 
@@ -234,7 +243,7 @@ function scrollToBottom() {
   }
 }
 
-// === ПЕРЕКЛЮЧЕНИЕ НА ЛС ===
+// === ПЕРЕКЛЮЧЕНИЕ НА ЛИЧНЫЙ ЧАТ ===
 function openDM(userId) {
   activeDM = userId;
   const name = getUserDisplayName(userId);
@@ -258,14 +267,15 @@ if (backBtn) {
 
 // === РАБОТА С НЕДАВНИМИ ЛС ===
 function trackRecentDM(msg) {
-  if (msg.dm_with && (msg.user_id === currentUser.id || msg.dm_with === currentUser.id)) {
+  if (!msg.dm_with) return;
+  if (msg.user_id === currentUser.id || msg.dm_with === currentUser.id) {
     const otherId = msg.user_id === currentUser.id ? msg.dm_with : msg.user_id;
     addToRecentDMs(otherId);
   }
 }
 
 function addToRecentDMs(userId) {
-  if (userId === currentUser.id) return;
+  if (userId === currentUser.id || !currentUser) return;
   if (!recentDMs.has(userId)) {
     recentDMs.set(userId, { email: 'Загрузка...', avatar_color: '#7a5ce8' });
     fetchUserDetails(userId);
@@ -326,7 +336,7 @@ function getUserDisplayName(userId) {
   return user ? user.email.split('@')[0] : 'Пользователь';
 }
 
-// === ПОИСК ПО НИКУ ===
+// === ПОИСК ПО НИКУ (в поле "+" внизу ЛС) ===
 if (dmSearchInput) {
   dmSearchInput.addEventListener('keypress', async function (e) {
     if (e.key === 'Enter') {
@@ -352,9 +362,9 @@ if (dmSearchInput) {
   });
 }
 
-// === ЗАГРУЗКА ПОЛЬЗОВАТЕЛЕЙ ===
+// === ЗАГРУЗКА СПИСКА ПОЛЬЗОВАТЕЛЕЙ (справа) ===
 async function loadUserList() {
-  if (!userList) return;
+  if (!userList || !currentUser) return;
 
   try {
     const { data, error } = await supabaseClient
@@ -392,7 +402,7 @@ async function loadUserList() {
   }
 }
 
-// === РЕАЛЬНОЕ ВРЕМЯ ===
+// === РЕАЛЬНОЕ ВРЕМЯ (новые сообщения) ===
 function startRealtime() {
   supabaseClient
     .channel('chat')
@@ -409,11 +419,7 @@ function startRealtime() {
         msg.dm_with === currentUser.id;
 
       if (isRelevant) {
-        if (msg.dm_with && (msg.user_id === currentUser.id || msg.dm_with === currentUser.id)) {
-          const otherId = msg.user_id === currentUser.id ? msg.dm_with : msg.user_id;
-          addToRecentDMs(otherId);
-        }
-
+        trackRecentDM(msg);
         if (
           !msg.dm_with ||
           (activeDM && (msg.user_id === currentUser.id || msg.dm_with === currentUser.id))
@@ -427,7 +433,7 @@ function startRealtime() {
     });
 }
 
-// === КНОПКА "ПОКАЗАТЬ ПОЛЬЗОВАТЕЛЕЙ" ===
+// === КНОПКА "ПОКАЗАТЬ ПОЛЬЗОВАТЕЛЕЙ" (на мобильных) ===
 function createUsersToggle() {
   const existing = document.querySelector('.toggle-users-btn');
   if (existing) return;
@@ -444,7 +450,7 @@ function createUsersToggle() {
   document.body.appendChild(btn);
 }
 
-// === ОБРАБОТКА РЕЗИЗА ===
+// === ОБРАБОТКА ИЗМЕНЕНИЯ РАЗМЕРА ОКНА ===
 window.addEventListener('resize', () => {
   const usersBtn = document.querySelector('.toggle-users-btn');
   const usersPanel = document.querySelector('.users');
@@ -479,7 +485,7 @@ function closeModal() {
   modal.style.display = 'none';
 }
 
-// === ВХОД / РЕГИСТРАЦИЯ ===
+// === ВХОД ===
 async function login() {
   const email = document.getElementById('loginEmail')?.value;
   const password = document.getElementById('loginPassword')?.value;
@@ -494,6 +500,7 @@ async function login() {
   }
 }
 
+// === РЕГИСТРАЦИЯ ===
 async function register() {
   const email = document.getElementById('regEmail')?.value;
   const password = document.getElementById('regPassword')?.value;
@@ -506,7 +513,7 @@ async function register() {
   if (error) {
     alert('Ошибка: ' + error.message);
   } else {
-    alert('Регистрация успешна! Проверьте почту.');
+    alert('Регистрация успешна! Проверьте почту для подтверждения.');
     closeModal();
   }
 }
