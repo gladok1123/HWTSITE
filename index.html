@@ -2,46 +2,57 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Чат</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>GigaChat</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
+  <!-- === ОСНОВНОЕ ПРИЛОЖЕНИЕ === -->
   <div class="discord-app">
-    <!-- Левая панель: серверы и ЛС -->
+    <!-- Левая панель: серверы и недавние ЛС -->
     <div class="sidebar servers">
+      <!-- Общий чат -->
       <div class="server-icon" title="Общий чат">💬</div>
+
+      <!-- Разделитель -->
       <div class="divider"></div>
+
+      <!-- Список недавних личных чатов -->
       <div class="dm-list" id="dmList"></div>
     </div>
 
     <!-- Центральная панель: чат -->
     <div class="main-panel">
-      <!-- Заголовок с возможностью вернуться -->
+      <!-- Заголовок канала с кнопкой возврата -->
       <div class="channel-header">
         <span id="chatTitle"># общий</span>
-        <button id="backToGeneral" class="back-btn" style="display: none;">← Общий</button>
+        <button id="backBtn" class="back-btn" style="display: none;">← Общий</button>
       </div>
 
-      <!-- Чат -->
+      <!-- Область сообщений -->
       <div class="chat-container" id="chatContainer">
         <div class="messages-list" id="messageList"></div>
       </div>
 
-      <!-- Ввод -->
+      <!-- Панель ввода сообщения -->
       <div class="input-area">
-        <textarea id="messageText" placeholder="Сообщение..." rows="1"></textarea>
+        <textarea 
+          id="messageText" 
+          placeholder="Сообщение..." 
+          rows="1"
+        ></textarea>
         <button id="sendBtn">➤</button>
       </div>
     </div>
 
-    <!-- Правая панель: пользователи -->
+    <!-- Правая панель: пользователи онлайн -->
     <div class="sidebar users" id="userList">
       <div class="user-header">ОНЛАЙН</div>
+      <!-- Сюда будут подгружаться пользователи -->
     </div>
   </div>
 
-  <!-- Экран входа -->
+  <!-- === ЭКРАН ВХОДА === -->
   <div class="auth-screen" id="authScreen">
     <div class="auth-box">
       <h2>💬 GigaChat</h2>
@@ -51,10 +62,10 @@
     </div>
   </div>
 
-  <!-- Модалка -->
+  <!-- === МОДАЛЬНЫЕ ОКНА (динамически) === -->
   <div id="modal"></div>
 
-  <!-- Подключение -->
+  <!-- === ПОДКЛЮЧЕНИЕ СКРИПТОВ === -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="script.js"></script>
 </body>
