@@ -7,27 +7,50 @@
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <div class="app" id="app">
-    <!-- Header -->
-    <header class="header">
-      <h1 class="logo">💬 Чат</h1>
-      <nav id="nav"></nav>
-    </header>
-
-    <!-- Основной экран (вход/регистрация) -->
-    <div class="main" id="main"></div>
-
-    <!-- Чат -->
-    <div class="chat-container">
-      <div class="messages-list" id="messageList"></div>
+  <div class="discord-app">
+    <!-- Левая панель: серверы -->
+    <div class="sidebar servers">
+      <div class="server-icon" title="Общий чат">💬</div>
     </div>
 
-    <!-- Панель ввода (всегда есть, но скрывается при выходе) -->
-    <div class="input-area">
-      <textarea id="messageText" placeholder="Сообщение..." rows="1"></textarea>
-      <button id="sendBtn" onclick="sendMessage()">➤</button>
+    <!-- Центральная панель: каналы и чат -->
+    <div class="main-panel">
+      <!-- Заголовок канала -->
+      <div class="channel-header">
+        <span># общий</span>
+      </div>
+
+      <!-- Чат -->
+      <div class="chat-container" id="chatContainer">
+        <div class="messages-list" id="messageList"></div>
+      </div>
+
+      <!-- Панель ввода -->
+      <div class="input-area">
+        <textarea id="messageText" placeholder="Сообщение..." rows="1"></textarea>
+        <button id="sendBtn">➤</button>
+      </div>
+    </div>
+
+    <!-- Правая панель: пользователи -->
+    <div class="sidebar users" id="userList">
+      <div class="user-header">Онлайн</div>
+      <!-- Пользователи будут здесь -->
     </div>
   </div>
+
+  <!-- Экран входа -->
+  <div class="auth-screen" id="authScreen">
+    <div class="auth-box">
+      <h2>💬 GigaChat</h2>
+      <p>Войдите, чтобы начать общение</p>
+      <button onclick="showLogin()">Войти</button>
+      <button onclick="showRegister()">Регистрация</button>
+    </div>
+  </div>
+
+  <!-- Модалки -->
+  <div id="modal"></div>
 
   <!-- Supabase -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
