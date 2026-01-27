@@ -18,6 +18,44 @@ const modal = document.getElementById('modal');
 if (!messageList) console.error('❌ #messageList не найден');
 if (!chatContainer) console.error('❌ .chat-container не найден');
 
+// === Адаптивность: Показать/скрыть пользователей на мобильных ===
+function createUsersToggle() {
+  const btn = document.createElement('button');
+  btn.innerHTML = '👥';
+  btn.className = 'toggle-users-btn';
+  btn.onclick = () => {
+    const usersPanel = document.querySelector('.users');
+    const isVisible = usersPanel.classList.contains('show');
+    usersPanel.classList.toggle('show', !isVisible);
+    btn.innerHTML = isVisible ? '👥' : '✕';
+  };
+  document.body.appendChild(btn);
+}
+
+// Вызов после showMainApp()
+function showMainApp() {
+  authScreen.style.display = 'none';
+  const app = document.querySelector('.discord-app');
+  app.style.display = 'flex';
+
+  // Создаём кнопку только на мобильных
+  if (window.innerWidth <= 768) {
+    setTimeout(createUsersToggle, 500); // Даем время загрузиться
+  }
+}
+
+// Перезагрузка при изменении размера
+window.addEventListener('resize', () => {
+  const usersBtn = document.querySelector('.toggle-users-btn');
+  if (window.innerWidth > 768 && usersBtn) {
+    usersBtn.remove();
+    document.querySelector('.users').classList.remove('show');
+  } else if (window.innerWidth <= 768 && !usersBtn && document.querySelector('.discord-app').style.display !== 'none') {
+    createUsersToggle();
+  }
+});
+
+
 window.addEventListener('load', async () => {
   try {
     const { data: { session } } = await supabaseClient.auth.getSession();
@@ -340,3 +378,4 @@ async function register() {
     alert('Проверьте почту');
   }
 }
+
