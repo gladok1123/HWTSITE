@@ -35,7 +35,7 @@ body {
   transition: width 0.3s ease;
 }
 
-/* === ЛЕВАЯ ПАНЕЛЬ: Серверы === */
+/* === ЛЕВАЯ ПАНЕЛЬ: Серверы и ЛС === */
 .servers {
   width: 72px;
   background: #202225;
@@ -43,6 +43,9 @@ body {
   display: flex;
   flex-direction: column;
   align-items: center;
+  position: relative;
+  flex-shrink: 0;
+  height: 100%;
 }
 
 .server-icon {
@@ -57,11 +60,57 @@ body {
   font-size: 24px;
   margin: 8px 0;
   cursor: pointer;
-  transition: background 0.2s;
+  transition: background 0.2s, transform 0.2s;
 }
 
 .server-icon:hover {
   background: #677bc4;
+  transform: scale(1.05);
+}
+
+/* === НЕДАВНИЕ ЛИЧНЫЕ ЧАТЫ === */
+.dm-list {
+  margin-top: auto;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding-bottom: 10px;
+}
+
+.dm-item {
+  width: 48px;
+  height: 48px;
+  border-radius: 8px;
+  background: #7289da;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  font-size: 18px;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.2s;
+  position: relative;
+  overflow: hidden;
+}
+
+.dm-item:hover {
+  transform: scale(1.05);
+  background: #677bc4;
+}
+
+.dm-item::after {
+  content: '';
+  position: absolute;
+  bottom: 2px;
+  right: 2px;
+  width: 12px;
+  height: 12px;
+  background: #43b581;
+  border-radius: 50%;
+  border: 2px solid #202225;
 }
 
 /* === ЦЕНТРАЛЬНАЯ ПАНЕЛЬ: Чат === */
@@ -140,6 +189,11 @@ body {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  cursor: pointer;
+}
+
+.message .author:hover {
+  text-decoration: underline;
 }
 
 .message .timestamp {
@@ -190,6 +244,7 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
+  transition: background 0.2s;
 }
 
 #sendBtn:hover {
@@ -205,6 +260,19 @@ body {
   color: #b9bbbe;
   font-size: 14px;
   transition: transform 0.3s ease;
+  position: absolute;
+  top: 0;
+  right: 0;
+  height: 100%;
+  z-index: 10;
+}
+
+.users.show {
+  transform: translateX(0);
+}
+
+.users:not(.show) {
+  transform: translateX(100%);
 }
 
 .user-header {
@@ -213,6 +281,7 @@ body {
   color: #dcddde;
   text-transform: uppercase;
   font-size: 12px;
+  border-bottom: 1px solid #202225;
 }
 
 .user-item {
@@ -222,6 +291,7 @@ body {
   border-radius: 4px;
   cursor: pointer;
   margin: 2px 8px;
+  transition: background 0.2s;
 }
 
 .user-item:hover {
@@ -310,6 +380,10 @@ body {
   color: white;
 }
 
+.auth-box button:hover {
+  opacity: 0.9;
+}
+
 /* === МОДАЛЬНЫЕ ОКНА === */
 #modal {
   position: fixed;
@@ -341,6 +415,11 @@ body {
   text-align: center;
   font-weight: 600;
   font-size: 18px;
+}
+
+.modal-body {
+  padding: 20px;
+  color: #dcddde;
 }
 
 .modal-body input {
@@ -381,7 +460,6 @@ body {
 
 /* === АДАПТИВНОСТЬ === */
 
-/* --- Мобильные устройства (< 768px) --- */
 @media (max-width: 768px) {
   .discord-app {
     height: 100vh;
@@ -397,6 +475,7 @@ body {
     height: 56px;
     overflow-x: auto;
     white-space: nowrap;
+    position: static;
   }
 
   .server-icon {
@@ -405,14 +484,19 @@ body {
     margin: 0 8px;
   }
 
+  .dm-list {
+    display: none; /* Скрываем ЛС на мобилках — они в правой панели */
+  }
+
   .users {
     width: 100%;
-    height: 200px;
-    border-top: 1px solid #202225;
-    border-left: none;
+    height: 250px;
     position: absolute;
     bottom: 0;
+    top: auto;
     left: 0;
+    border-top: 1px solid #202225;
+    border-left: none;
     transform: translateY(100%);
     transition: transform 0.3s ease;
     z-index: 10;
@@ -424,10 +508,6 @@ body {
 
   .user-header {
     padding: 12px 12px 8px;
-  }
-
-  .user-item {
-    margin: 2px 8px;
   }
 
   .chat-container {
@@ -464,7 +544,7 @@ body {
   }
 }
 
-/* --- Кнопка "Пользователи" на мобильных --- */
+/* === КНОПКА "ПОКАЗАТЬ ПОЛЬЗОВАТЕЛЕЙ" (МОБИЛЬНЫЕ) === */
 @media (max-width: 768px) {
   .toggle-users-btn {
     position: absolute;
