@@ -9,6 +9,7 @@ const nav = document.getElementById('nav');
 let currentUser = null;
 let currentAvatarColor = '#7a5ce8';
 
+// === Загрузка при старте ===
 window.addEventListener('load', async () => {
   const { data: { session } } = await supabaseClient.auth.getSession();
   currentUser = session?.user || null;
@@ -18,10 +19,12 @@ window.addEventListener('load', async () => {
     setupNav();
     loadMessages();
     startRealtime();
+    showChat(); // Показываем чат
   } else {
-    renderAuthScreen();
+    renderAuthScreen(); // Показываем вход
   }
 
+  // Отслеживаем авторизацию
   supabaseClient.auth.onAuthStateChange(async (event, session) => {
     currentUser = session?.user || null;
     if (event === 'SIGNED_IN') {
@@ -29,6 +32,7 @@ window.addEventListener('load', async () => {
       setupNav();
       loadMessages();
       startRealtime();
+      showChat();
     } else if (event === 'SIGNED_OUT') {
       currentUser = null;
       currentAvatarColor = '#7a5ce8';
@@ -37,6 +41,7 @@ window.addEventListener('load', async () => {
   });
 });
 
+// === Загрузка цвета из базы ===
 async function loadUserSettings() {
   const { data, error } = await supabaseClient
     .from('users')
@@ -45,13 +50,15 @@ async function loadUserSettings() {
     .single();
 
   if (error) {
-    await ensureUserRecord('#7a5ce8');
+    console.warn('Цвет не найден, создаём запись...');
     currentAvatarColor = '#7a5ce8';
+    await ensureUserRecord(currentAvatarColor);
   } else {
     currentAvatarColor = data.avatar_color || '#7a5ce8';
   }
 }
 
+// === Сохранение пользователя и цвета ===
 async function ensureUserRecord(color) {
   const { error } = await supabaseClient.from('users').upsert({
     id: currentUser.id,
@@ -62,8 +69,10 @@ async function ensureUserRecord(color) {
   if (error) console.error('Ошибка:', error);
 }
 
+// === Изменение цвета аватарки ===
 async function changeAvatarColor(color) {
   currentAvatarColor = color;
+
   const avatar = document.querySelector('.user-avatar');
   if (avatar) avatar.style.background = color;
 
@@ -77,6 +86,7 @@ async function changeAvatarColor(color) {
   });
 }
 
+// === Навигация ===
 function setupNav() {
   const name = currentUser.email.split('@')[0];
   const firstLetter = name[0].toUpperCase();
@@ -87,19 +97,10 @@ function setupNav() {
   `;
 }
 
+// === Показ экрана входа ===
 function renderAuthScreen() {
-  const oldMain = document.getElementById('main');
-  if (oldMain) oldMain.remove();
-
-  const main = document.createElement('div');
-  main.id = 'main';
-  main.style.padding = '16px';
-  main.style.display = 'flex';
-  main.style.flexDirection = 'column';
-  main.style.justifyContent = 'center';
-  main.style.alignItems = 'center';
-  main.style.flex = '1';
-  main.style.textAlign = 'center';
+  const main = document.getElementById('main');
+  if (!main) return;
 
   main.innerHTML = `
     <h2>💬 Чат</h2>
@@ -108,14 +109,19 @@ function renderAuthScreen() {
     <button onclick="showRegister()" style="margin:8px; min-width:120px; background:#3a3a3c;">Регистрация</button>
   `;
 
-  const app = document.getElementById('app');
-  const inputArea = app.querySelector('.input-area');
-  if (inputArea) app.insertBefore(main, inputArea);
-
+  // Скрываем чат
   document.querySelector('.chat-container').style.display = 'none';
   document.querySelector('.input-area').style.display = 'none';
 }
 
+// === Показ чата ===
+function showChat() {
+  document.querySelector('.chat-container').style.display = 'flex';
+  document.querySelector('.input-area').style.display = 'flex';
+  document.getElementById('main').innerHTML = '';
+}
+
+// === Окна входа/регистрации ===
 function showLogin() {
   const modal = document.createElement('div');
   modal.className = 'modal-overlay';
@@ -154,6 +160,7 @@ function showRegister() {
   document.body.appendChild(modal);
 }
 
+// === Регистрация и вход ===
 async function register() {
   const email = document.getElementById('regEmail').value;
   const password = document.getElementById('regPassword').value;
@@ -181,6 +188,7 @@ async function login() {
   }
 }
 
+// === Закрытие модалок ===
 function closeModal(button) {
   const modal = button?.closest('.profile-modal') || 
                 document.querySelector('.profile-modal') ||
@@ -188,6 +196,7 @@ function closeModal(button) {
   modal?.remove();
 }
 
+// === Профиль ===
 async function openProfile() {
   await loadUserSettings();
   const name = currentUser.email.split('@')[0];
@@ -223,14 +232,13 @@ async function openProfile() {
   document.body.appendChild(modal);
 }
 
+// === Выход ===
 async function logout() {
   await supabaseClient.auth.signOut();
   closeModal();
-  currentUser = null;
-  currentAvatarColor = '#7a5ce8';
-  renderAuthScreen();
 }
 
+// === Отправка сообщения ===
 async function sendMessage() {
   const textarea = document.getElementById('messageText');
   const text = textarea.value.trim();
@@ -264,6 +272,7 @@ document.getElementById('messageText')?.addEventListener('input', function () {
   adjustTextareaHeight(this);
 });
 
+// === Загрузка сообщений ===
 async function loadMessages() {
   const { data, error } = await supabaseClient
     .from('messages')
@@ -299,7 +308,6 @@ function addMessageToDOM(msg) {
     <div>${msg.text}</div>
   `;
 
-  // Добавляем аватарку слева для чужих сообщений
   if (!isOwn) {
     const avatar = document.createElement('div');
     avatar.className = 'msg-avatar';
@@ -312,32 +320,20 @@ function addMessageToDOM(msg) {
   scrollToBottom();
 }
 
-// === Прокрутка вниз ===
 function scrollToBottom() {
   messageList.scrollTop = messageList.scrollHeight;
 }
 
-// === Реальное время: новые сообщения ===
+// === Реальное время ===
 function startRealtime() {
   supabaseClient
     .channel('chat')
-    .on(
-      'postgres_changes',
-      {
-        event: 'INSERT',
-        schema: 'public',
-        table: 'messages',
-      },
-      (payload) => {
-        console.log('Новое сообщение:', payload.new);
-        addMessageToDOM(payload.new);
-      }
-    )
-    .subscribe((status, err) => {
-      if (err) {
-        console.error('Ошибка Realtime:', err);
-      } else {
-        console.log('Realtime подключён:', status);
-      }
-    });
+    .on('postgres_changes', {
+      event: 'INSERT',
+      schema: 'public',
+      table: 'messages'
+    }, (payload) => {
+      addMessageToDOM(payload.new);
+    })
+    .subscribe();
 }
