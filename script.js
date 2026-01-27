@@ -68,7 +68,7 @@ function openProfile() {
           <p><strong>Email:</strong> ${currentUser.email}</p>
         </div>
         <div class="profile-actions">
-          <button onclick="this.closest('.profile-modal').remove()" style="background:#555;">Закрыть</button>
+          <button onclick="closeModal(this)">Закрыть</button>
           <button onclick="logout()" class="btn-logout">Выйти</button>
         </div>
       </div>
@@ -79,63 +79,60 @@ function openProfile() {
 
 async function logout() {
   await supabaseClient.auth.signOut();
-  document.querySelector('.profile-modal')?.remove();
+  closeModal();
   currentUser = null;
   setupNav();
   loadMessages();
 }
 
+// === ЗАКРЫТИЕ МОДАЛОК ===
+function closeModal(button) {
+  const modal = button?.closest('.profile-modal') || 
+                document.querySelector('.profile-modal') ||
+                document.querySelector('.modal-overlay');
+  modal?.remove();
+}
+
 // === ОКНО ВХОДА/РЕГИСТРАЦИИ ===
 function showLogin() {
-  const html = `
+  const modal = document.createElement('div');
+  modal.className = 'modal-overlay';
+  modal.innerHTML = `
     <div class="form">
       <h2>Вход</h2>
       <input id="loginEmail" type="email" placeholder="Email">
       <input id="loginPassword" type="password" placeholder="Пароль">
       <button onclick="login()">Войти</button>
       <p style="margin-top:12px; color:#888;">
-        Нет аккаунта? <a href="#" onclick="showRegister(); return false;" style="color:#5a3f9d;">Регистрация</a>
+        Нет аккаунта? 
+        <a href="#" onclick="showRegister(); return false;">Регистрация</a>
       </p>
-    </div>
-  `;
-  showMessageModal(html);
-}
-
-function showRegister() {
-  const html = `
-    <div class="form">
-      <h2>Регистрация</h2>
-      <input id="regEmail" type="email" placeholder="Email">
-      <input id="regPassword" type="password" placeholder="Пароль">
-      <button onclick="register()">Зарегистрироваться</button>
-    </div>
-  `;
-  showMessageModal(html);
-}
-
-function showMessageModal(content) {
-  const modal = document.createElement('div');
-  modal.style.position = 'fixed';
-  modal.style.top = 0;
-  modal.style.left = 0;
-  modal.style.width = '100%';
-  modal.style.height = '100%';
-  modal.style.background = 'rgba(0,0,0,0.8)';
-  modal.style.display = 'flex';
-  modal.style.justifyContent = 'center';
-  modal.style.alignItems = 'center';
-  modal.style.zIndex = 1000;
-  modal.innerHTML = `
-    <div style="background:#1c1c1e; padding:24px; border-radius:16px; width:90%; max-width:400px;">
-      ${content}
       <p style="color:#888; text-align:center; margin-top:12px;">
-        <a href="#" onclick="modal.remove(); return false;" style="color:#5a3f9d;">Отмена</a>
+        <a href="#" onclick="closeModal(this); return false;">Отмена</a>
       </p>
     </div>
   `;
   document.body.appendChild(modal);
 }
 
+function showRegister() {
+  const modal = document.createElement('div');
+  modal.className = 'modal-overlay';
+  modal.innerHTML = `
+    <div class="form">
+      <h2>Регистрация</h2>
+      <input id="regEmail" type="email" placeholder="Email">
+      <input id="regPassword" type="password" placeholder="Пароль">
+      <button onclick="register()">Зарегистрироваться</button>
+      <p style="color:#888; text-align:center; margin-top:12px;">
+        <a href="#" onclick="closeModal(this); return false;">Отмена</a>
+      </p>
+    </div>
+  `;
+  document.body.appendChild(modal);
+}
+
+// === РЕГИСТРАЦИЯ И ВХОД ===
 async function register() {
   const email = document.getElementById('regEmail').value;
   const password = document.getElementById('regPassword').value;
@@ -145,19 +142,21 @@ async function register() {
   if (error) {
     alert('Ошибка: ' + error.message);
   } else {
-    alert('Проверьте почту');
-    document.querySelector('.profile-modal, .form')?.closest('div')?.remove();
+    alert('Проверьте почту для подтверждения');
+    closeModal();
   }
 }
 
 async function login() {
   const email = document.getElementById('loginEmail').value;
   const password = document.getElementById('loginPassword').value;
+  if (!email || !password) return alert('Заполните поля');
+
   const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
   if (error) {
     alert('Ошибка: ' + error.message);
   } else {
-    document.querySelector('.profile-modal, .form')?.closest('div')?.remove();
+    closeModal();
   }
 }
 
@@ -215,7 +214,6 @@ async function loadMessages() {
 
     const messageEl = document.createElement('div');
     messageEl.className = `message ${isOwn ? 'own' : ''}`;
-
     messageEl.innerHTML = `
       <div class="message-header">
         <span>${name}</span>
@@ -223,7 +221,6 @@ async function loadMessages() {
       </div>
       <div>${msg.text}</div>
     `;
-
     messageList.appendChild(messageEl);
   });
 
