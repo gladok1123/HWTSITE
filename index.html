@@ -12,20 +12,20 @@
     <header class="header">
       <h1 class="logo">💬 Чат</h1>
       <nav id="nav">
-        <span>Аноним</span>
+        <!-- Кнопки входа или аватар -->
       </nav>
     </header>
 
-    <!-- Основной экран -->
-    <main class="main" id="main">
-      <div class="form">
-        <h2>Написать сообщение</h2>
-        <textarea id="messageText" placeholder="Введите сообщение..." rows="3"></textarea>
-        <button onclick="sendMessage()">Отправить</button>
-      </div>
-      <div class="post-list" id="messageList"></div>
-    </main>
+    <!-- Чат -->
+    <div class="chat-container">
+      <div class="messages-list" id="messageList"></div>
+    </div>
 
+    <!-- Панель ввода -->
+    <div class="input-area">
+      <textarea id="messageText" placeholder="Сообщение..." rows="1"></textarea>
+      <button id="sendBtn" onclick="sendMessage()">➤</button>
+    </div>
   </div>
 
   <!-- Подключаем Supabase -->
@@ -33,4 +33,3 @@
   <script src="script.js"></script>
 </body>
 </html>
-
