@@ -17,8 +17,8 @@ window.addEventListener('load', async () => {
   currentUser = session?.user || null;
 
   setupNav();
-  loadMessages();
-  startRealtime();
+  await loadMessages(); // Загружаем сразу
+  startRealtime();      // Подключаем реалтайм
 
   if (!currentNickname && !currentUser) {
     promptForNickname();
@@ -82,7 +82,7 @@ async function logout() {
   closeModal();
   currentUser = null;
   setupNav();
-  loadMessages();
+  await loadMessages();
 }
 
 // === ЗАКРЫТИЕ МОДАЛОК ===
@@ -208,31 +208,53 @@ async function loadMessages() {
 
   messageList.innerHTML = '';
 
-  data.forEach(msg => {
-    const isOwn = msg.user_id === currentUser?.id;
-    const name = msg.sender_name;
+  data.forEach(addMessageToDOM);
+  scrollToBottom();
+}
 
-    const messageEl = document.createElement('div');
-    messageEl.className = `message ${isOwn ? 'own' : ''}`;
-    messageEl.innerHTML = `
-      <div class="message-header">
-        <span>${name}</span>
-        <span>${new Date(msg.created_at).toLocaleTimeString('ru')}</span>
-      </div>
-      <div>${msg.text}</div>
-    `;
-    messageList.appendChild(messageEl);
-  });
+// === ДОБАВЛЕНИЕ СООБЩЕНИЯ В DOM ===
+function addMessageToDOM(msg) {
+  const isOwn = msg.user_id === currentUser?.id;
+  const name = msg.sender_name;
 
+  const messageEl = document.createElement('div');
+  messageEl.className = `message ${isOwn ? 'own' : ''}`;
+  messageEl.dataset.id = msg.id || 'temp'; // Для отладки
+
+  messageEl.innerHTML = `
+    <div class="message-header">
+      <span>${name}</span>
+      <span>${new Date(msg.created_at).toLocaleTimeString('ru')}</span>
+    </div>
+    <div>${msg.text}</div>
+  `;
+
+  messageList.appendChild(messageEl);
+  scrollToBottom();
+}
+
+// === ПРОКРУТКА ВНИЗ ===
+function scrollToBottom() {
   messageList.scrollTop = messageList.scrollHeight;
 }
 
-// === РЕАЛЬНОЕ ВРЕМЯ ===
+// === РЕАЛЬНОЕ ВРЕМЯ — КЛЮЧЕВАЯ ЧАСТЬ ===
 function startRealtime() {
   supabaseClient
-    .channel('chat')
-    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, () => {
-      loadMessages();
+    .channel('public:messages')
+    .on('postgres_changes', {
+      event: 'INSERT',
+      schema: 'public',
+      table: 'messages'
+    }, (payload) => {
+      console.log('Новое сообщение:', payload.new);
+      addMessageToDOM(payload.new);
     })
-    .subscribe();
+    .subscribe((status, err) => {
+      if (err) {
+        console.error('Ошибка Realtime:', err);
+      } else {
+        console.log('Realtime подключён:', status);
+      }
+    });
 }
