@@ -528,18 +528,27 @@ let rtcChannel = null;
 let isCalling = null; // текущий вызов (userId)
 let incomingCallFrom = null; // кто звонит
 
-// Инициализация канала звонков
-function initCallChannel() {
-  if (rtcChannel) return;
+// === ИСПРАВЛЕННАЯ ИНИЦИАЛИЗАЦИЯ КАНАЛА (ТОЛЬКО BROADCAST) ===
+function initCallSystem() {
+  const channel = supabaseClient.channel(`call_${currentUser.id}`, {
+    config: {
+      broadcast: { ack: true },
+      presence: false,
+      private: false
+    }
+  });
 
-  rtcChannel = supabaseClient.channel('calls-' + currentUser.id); // Уникальный канал
-  rtcChannel
-    .on('broadcast', { event: 'offer' }, (payload) => handleOffer(payload))
-    .on('broadcast', { event: 'answer' }, (payload) => handleAnswer(payload))
-    .on('broadcast', { event: 'ice-candidate' }, (payload) => handleCandidate(payload))
-    .on('broadcast', { event: 'hangup' }, (payload) => handleHangup(payload))
+  channel
+    .on('broadcast', { event: 'call_offer' }, handleIncomingOffer)
+    .on('broadcast', { event: 'call_answer' }, handleAnswer)
+    .on('broadcast', { event: 'call_ice' }, handleIceCandidate)
+    .on('broadcast', { event: 'call_hangup' }, handleHangup)
     .subscribe((status, err) => {
-      if (err) console.error('Call channel error:', err);
+      if (err) {
+        console.error('Ошибка подписки на звонки:', err);
+      } else if (status === 'SUBSCRIBED') {
+        console.log('Канал звонков активен:', `call_${currentUser.id}`);
+      }
     });
 }
 
@@ -800,4 +809,5 @@ function addCallButton(userId) {
   el.onclick = () => startCall(userId);
   list.appendChild(el);
 }
+
 
