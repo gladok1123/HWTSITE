@@ -595,6 +595,7 @@ body {
     border: none;
   }
 }
+
 /* === ПОЛЕ ПОИСКА ЛС === */
 .dm-search-container {
   width: 48px;
@@ -661,4 +662,3 @@ body {
 .dm-search-container input:not(:placeholder-shown) + ::after {
   display: none;
 }
-
