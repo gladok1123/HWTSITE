@@ -520,21 +520,27 @@ async function register() {
   }
 }
 
-// === 📞 ГОЛОСОВЫЕ ЗВОНКИ (WebRTC + Supabase Realtime) ===
+// === 📞 ГОЛОСОВЫЕ ЗВОНКИ (исправленные) ===
 
 const peerConnections = {};
 const localStream = new Map(); // userId → stream
 let rtcChannel = null;
+let isCalling = null; // текущий вызов (userId)
+let incomingCallFrom = null; // кто звонит
 
 // Инициализация канала звонков
 function initCallChannel() {
-  rtcChannel = supabaseClient.channel('calls');
+  if (rtcChannel) return;
+
+  rtcChannel = supabaseClient.channel('calls-' + currentUser.id); // Уникальный канал
   rtcChannel
     .on('broadcast', { event: 'offer' }, (payload) => handleOffer(payload))
     .on('broadcast', { event: 'answer' }, (payload) => handleAnswer(payload))
     .on('broadcast', { event: 'ice-candidate' }, (payload) => handleCandidate(payload))
     .on('broadcast', { event: 'hangup' }, (payload) => handleHangup(payload))
-    .subscribe();
+    .subscribe((status, err) => {
+      if (err) console.error('Call channel error:', err);
+    });
 }
 
 // Получение доступа к микрофону
@@ -554,10 +560,15 @@ async function getMediaStream(userId) {
 
 // Начать звонок
 async function startCall(userId) {
-  if (!rtcChannel) initCallChannel();
+  if (!currentUser) return;
+
+  isCalling = userId;
 
   const stream = await getMediaStream(userId);
-  if (!stream) return;
+  if (!stream) {
+    isCalling = null;
+    return;
+  }
 
   const peer = createPeerConnection(userId);
   stream.getTracks().forEach(track => peer.addTrack(track, stream));
@@ -565,7 +576,9 @@ async function startCall(userId) {
   const offer = await peer.createOffer();
   await peer.setLocalDescription(offer);
 
-  rtcChannel.send({
+  // Отправляем напрямую на канал получателя
+  const targetChannel = supabaseClient.channel('calls-' + userId);
+  targetChannel.send({
     type: 'broadcast',
     event: 'offer',
     payload: { offer, from: currentUser.id, to: userId }
@@ -579,28 +592,36 @@ function handleOffer(payload) {
   const { offer, from, to } = payload;
   if (to !== currentUser.id) return;
 
+  // Защита от повторных вызовов
+  if (incomingCallFrom || isCalling === from) return;
+
+  incomingCallFrom = from;
+
   showModalCall('Входящий звонок', `${getUserDisplayName(from)} звонит...`, () => acceptCall(from, offer));
 }
 
 // Показ модалки звонка
 function showModalCall(title, msg, onAccept) {
+  const modal = document.getElementById('callModal');
   document.getElementById('callTitle').textContent = title;
   document.getElementById('callMessage').textContent = msg;
-  document.getElementById('callModal').style.display = 'flex';
+  modal.style.display = 'flex';
 
   document.getElementById('callAccept').onclick = () => {
-    document.getElementById('callModal').style.display = 'none';
+    modal.style.display = 'none';
     onAccept();
   };
 
   document.getElementById('callDecline').onclick = () => {
-    endCall(from);
+    endCall(incomingCallFrom);
     document.getElementById('callModal').style.display = 'none';
   };
 }
 
 // Принять звонок
 async function acceptCall(fromId, remoteOffer) {
+  incomingCallFrom = null;
+
   const stream = await getMediaStream(fromId);
   if (!stream) return;
 
@@ -612,7 +633,9 @@ async function acceptCall(fromId, remoteOffer) {
   const answer = await peer.createAnswer();
   await peer.setLocalDescription(answer);
 
-  rtcChannel.send({
+  // Отправляем ответ
+  const targetChannel = supabaseClient.channel('calls-' + fromId);
+  targetChannel.send({
     type: 'broadcast',
     event: 'answer',
     payload: { answer, from: currentUser.id, to: fromId }
@@ -628,6 +651,7 @@ function handleAnswer(payload) {
   if (!peer) return;
 
   peer.setRemoteDescription(new RTCSessionDescription(answer));
+  isCalling = null;
 }
 
 // ICE кандидаты
@@ -643,7 +667,8 @@ function handleCandidate(payload) {
 function setupIceHandling(peer, userId) {
   peer.onicecandidate = (e) => {
     if (e.candidate) {
-      rtcChannel.send({
+      const targetChannel = supabaseClient.channel('calls-' + userId);
+      targetChannel.send({
         type: 'broadcast',
         event: 'ice-candidate',
         payload: { candidate: e.candidate, from: currentUser.id, to: userId }
@@ -662,7 +687,7 @@ function createPeerConnection(userId) {
   peerConnections[userId] = peer;
 
   peer.ontrack = (e) => {
-    // Можно добавить <audio>, если нужно явное управление
+    // Можно добавить <audio>, если нужно
   };
 
   peer.onconnectionstatechange = () => {
@@ -701,6 +726,9 @@ function getUserColor(email) {
 
 // Завершить звонок
 function endCall(userId) {
+  if (incomingCallFrom === userId) incomingCallFrom = null;
+  if (isCalling === userId) isCalling = null;
+
   if (peerConnections[userId]) {
     peerConnections[userId].close();
     delete peerConnections[userId];
@@ -714,8 +742,10 @@ function endCall(userId) {
 
   document.getElementById('callIndicator').style.display = 'none';
 
+  // Уведомляем собеседника
   if (userId && rtcChannel) {
-    rtcChannel.send({
+    const targetChannel = supabaseClient.channel('calls-' + userId);
+    targetChannel.send({
       type: 'broadcast',
       event: 'hangup',
       payload: { from: currentUser.id, to: userId }
@@ -737,6 +767,25 @@ function addCallButton(userId) {
   const list = document.querySelector('.dm-list');
   if (!list) return;
 
+  const existing = list.querySelector(`[data-call="${userId}"]`);
+  if (existing) existing.remove();
+
+  const el = document.createElement('div');
+  el.className = 'dm-item';
+  el.setAttribute('data-call', userId);
+  el.title = `Позвонить ${getUserDisplayName(userId)}`;
+  el.innerHTML = '📞';
+  el.style.background = '#43b581';
+  el.style.marginTop = '10px';
+  el.onclick = () => startCall(userId);
+  list.appendChild(el);
+}
+
+// Добавление кнопки "📞 Позвонить"
+function addCallButton(userId) {
+  const list = document.querySelector('.dm-list');
+  if (!list) return;
+
   // Удаляем старую, чтобы не дублировать
   const existing = list.querySelector(`[data-call="${userId}"]`);
   if (existing) existing.remove();
@@ -751,3 +800,4 @@ function addCallButton(userId) {
   el.onclick = () => startCall(userId);
   list.appendChild(el);
 }
+
