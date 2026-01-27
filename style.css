@@ -11,6 +11,24 @@ body {
   height: 100vh;
   display: flex;
   flex-direction: column;
+  background-image: 
+    radial-gradient(circle at 1px 1px, rgba(255, 255, 255, 0.08) 1px, transparent 0);
+  background-size: 20px 20px;
+  position: relative;
+}
+
+/* Фоновая текстура шума (опционально, но усиливает эффект) */
+.background {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+  background-size: cover;
+  z-index: -1;
+  opacity: 0.08;
+  pointer-events: none;
 }
 
 .app {
@@ -20,23 +38,31 @@ body {
   display: flex;
   flex-direction: column;
   height: 100vh;
-  border: 1px solid #2c2c2c;
+  border: 1px solid rgba(80, 80, 80, 0.2);
   border-radius: 16px;
   overflow: hidden;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
-  background: #000;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  background: rgba(20, 20, 22, 0.8);
+  margin-top: 20px;
+  margin-bottom: 20px;
 }
 
-/* === МАТОВОЕ СТЕКЛО (FROSTED GLASS) === */
+/* === МАТОВОЕ СТЕКЛО В ШАПКЕ === */
 .header {
-  backdrop-filter: blur(10px);
+  backdrop-filter: blur(20px) saturate(150%);
+  -webkit-backdrop-filter: blur(20px) saturate(150%);
   background: rgba(30, 30, 32, 0.85);
-  -webkit-backdrop-filter: blur(10px);
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
   display: flex;
   justify-content: space-between;
   align-items: center;
   padding: 14px 16px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
+  border-radius: 12px;
+  margin: 8px;
+  overflow: hidden;
 }
 
 .logo {
@@ -45,6 +71,7 @@ body {
   background: linear-gradient(90deg, #7a5ce8, #e9599d);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
+  letter-spacing: -0.5px;
 }
 
 #nav button {
@@ -56,6 +83,12 @@ body {
   font-size: 14px;
   cursor: pointer;
   backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  transition: background 0.2s;
+}
+
+#nav button:hover {
+  background: rgba(70, 70, 72, 0.7);
 }
 
 .user-avatar {
@@ -70,12 +103,13 @@ body {
   font-weight: bold;
   font-size: 14px;
   cursor: pointer;
-  border: 2px solid #5a3f9d;
-  transition: transform 0.2s;
+  border: 2px solid rgba(122, 92, 232, 0.4);
+  transition: transform 0.2s, border-color 0.2s;
 }
 
 .user-avatar:hover {
-  transform: scale(1.05);
+  transform: scale(1.08);
+  border-color: #fff;
 }
 
 .chat-container {
@@ -85,33 +119,40 @@ body {
   display: flex;
   flex-direction: column;
   gap: 12px;
-  background: #000;
+  background: rgba(0, 0, 0, 0.4);
+  border-radius: 12px;
+  margin: 0 8px;
 }
 
 .messages-list {
   display: flex;
   flex-direction: column;
+  gap: 10px;
 }
 
 .message {
   max-width: 75%;
   padding: 10px 14px;
   border-radius: 18px 18px 18px 4px;
-  background: rgba(58, 58, 60, 0.7);
+  background: rgba(58, 58, 60, 0.5);
   backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
   color: #fff;
   font-size: 15px;
   line-height: 1.5;
   word-wrap: break-word;
   align-self: flex-start;
   margin-bottom: 2px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
 .message.own {
   align-self: flex-end;
-  background: #7a5ce8;
+  background: rgba(122, 92, 232, 0.7);
   color: white;
   border-radius: 18px 18px 4px 18px;
+  border-color: rgba(255, 255, 255, 0.1);
 }
 
 .message-header {
@@ -125,11 +166,16 @@ body {
 .input-area {
   display: flex;
   align-items: center;
-  padding: 12px 16px;
-  backdrop-filter: blur(10px);
+  padding: 14px 16px;
+  margin: 0 8px 8px 8px;
+  backdrop-filter: blur(20px) saturate(130%);
+  -webkit-backdrop-filter: blur(20px) saturate(130%);
   background: rgba(30, 30, 32, 0.9);
   border-top: 1px solid rgba(255, 255, 255, 0.1);
-  gap: 10px;
+  gap: 12px;
+  border-radius: 16px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.3);
+  transition: background 0.3s;
 }
 
 #messageText {
@@ -143,10 +189,17 @@ body {
   outline: none;
   resize: none;
   max-height: 120px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  transition: background 0.2s;
 }
 
 #messageText::placeholder {
   color: #888;
+}
+
+#messageText:focus {
+  background: rgba(50, 50, 52, 0.7);
+  box-shadow: 0 0 0 2px rgba(122, 92, 232, 0.3);
 }
 
 #sendBtn {
@@ -161,24 +214,32 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+  transition: background 0.2s, transform 0.1s;
 }
 
 #sendBtn:hover {
   background: #8a6de9;
+  transform: scale(1.05);
 }
 
-/* Скроллбар */
+/* Скроллбар с прозрачностью */
 .chat-container::-webkit-scrollbar {
   width: 6px;
 }
 
 .chat-container::-webkit-scrollbar-track {
-  background: #111;
+  background: rgba(17, 17, 17, 0.5);
+  border-radius: 3px;
 }
 
 .chat-container::-webkit-scrollbar-thumb {
-  background: #444;
+  background: rgba(68, 68, 68, 0.7);
   border-radius: 3px;
+}
+
+.chat-container::-webkit-scrollbar-thumb:hover {
+  background: rgba(100, 100, 100, 0.8);
 }
 
 /* Аватарки в сообщениях */
@@ -194,6 +255,7 @@ body {
   font-size: 12px;
   font-weight: bold;
   margin-right: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 /* === МОДАЛЬНЫЕ ОКНА СО СТЕКЛОМ === */
@@ -210,18 +272,23 @@ body {
   align-items: center;
   z-index: 1000;
   animation: fadeIn 0.3s;
+  backdrop-filter: blur(4px);
 }
 
 .profile-content {
-  background: rgba(30, 30, 32, 0.95);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
   width: 90%;
   max-width: 400px;
   border-radius: 16px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
   overflow: hidden;
-  animation: scaleIn 0.3s;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.profile-content,
+.modal-overlay .form {
+  background: rgba(30, 30, 32, 0.95);
+  backdrop-filter: blur(24px) brightness(110%);
+  -webkit-backdrop-filter: blur(24px) brightness(110%);
 }
 
 .profile-header {
@@ -231,12 +298,14 @@ body {
   text-align: center;
   font-size: 18px;
   font-weight: 600;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
 }
 
 .profile-body {
   padding: 24px;
   text-align: center;
   color: #ddd;
+  font-size: 14px;
 }
 
 .profile-avatar {
@@ -251,33 +320,39 @@ body {
   font-weight: bold;
   font-size: 32px;
   margin: 0 auto 16px;
-  border: 3px solid rgba(90, 63, 157, 0.5);
+  border: 3px solid rgba(255, 255, 255, 0.2);
   cursor: pointer;
+  transition: transform 0.2s;
+}
+
+.profile-avatar:hover {
+  transform: scale(1.1);
 }
 
 .avatar-options {
   display: flex;
-  gap: 8px;
+  gap: 10px;
   justify-content: center;
-  margin: 12px 0;
+  margin: 16px 0;
   flex-wrap: wrap;
 }
 
 .avatar-option {
-  width: 36px;
-  height: 36px;
+  width: 40px;
+  height: 40px;
   border-radius: 50%;
   cursor: pointer;
-  border: 2px solid transparent;
-  transition: transform 0.2s;
+  border: 3px solid transparent;
+  transition: transform 0.2s, border-color 0.2s;
 }
 
 .avatar-option:hover {
-  transform: scale(1.1);
+  transform: scale(1.15);
 }
 
 .avatar-option.selected {
   border-color: #fff;
+  box-shadow: 0 0 0 2px rgba(122, 92, 232, 0.5);
 }
 
 .color-1 { background: #7a5ce8; }
@@ -292,8 +367,9 @@ body {
 }
 
 .profile-info p {
-  margin: 8px 0;
+  margin: 6px 0;
   word-break: break-all;
+  letter-spacing: 0.3px;
 }
 
 .profile-actions {
@@ -309,11 +385,16 @@ body {
   border-radius: 8px;
   font-size: 15px;
   cursor: pointer;
+  transition: background 0.2s;
 }
 
 .profile-actions button:first-child {
-  background: rgba(58, 58, 60, 0.6);
+  background: rgba(58, 58, 60, 0.7);
   color: white;
+}
+
+.profile-actions button:first-child:hover {
+  background: rgba(70, 70, 72, 0.8);
 }
 
 .profile-actions button.btn-logout {
@@ -321,12 +402,16 @@ body {
   color: white;
 }
 
+.profile-actions button.btn-logout:hover {
+  background: #f45b4d;
+}
+
 /* DM List */
 .dm-list {
   max-height: 200px;
   overflow-y: auto;
-  border-bottom: 1px solid #333;
-  margin-bottom: 16px;
+  border-bottom: 1px solid rgba(85, 85, 85, 0.3);
+  margin: 12px 0;
   padding-bottom: 12px;
 }
 
@@ -337,10 +422,11 @@ body {
   border-radius: 8px;
   cursor: pointer;
   margin: 4px 0;
+  transition: background 0.2s;
 }
 
 .dm-item:hover {
-  background: #3a3a3c;
+  background: rgba(58, 58, 60, 0.4);
 }
 
 .dm-avatar {
@@ -354,6 +440,7 @@ body {
   justify-content: center;
   font-size: 14px;
   margin-right: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .dm-name {
@@ -361,6 +448,7 @@ body {
   color: #ddd;
 }
 
+/* Анимации */
 @keyframes fadeIn {
   from { opacity: 0; }
   to { opacity: 1; }
