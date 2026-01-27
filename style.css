@@ -180,3 +180,151 @@ body {
   font-weight: bold;
   margin-right: 8px;
 }
+
+/* === МОДАЛЬНЫЕ ОКНА === */
+
+.profile-modal,
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.8);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  animation: fadeIn 0.3s;
+}
+
+.profile-content {
+  background: #1c1c1e;
+  width: 90%;
+  max-width: 400px;
+  border-radius: 16px;
+  border: 1px solid #333;
+  overflow: hidden;
+  animation: scaleIn 0.3s;
+}
+
+.profile-header {
+  background: #5a3f9d;
+  color: white;
+  padding: 20px;
+  text-align: center;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.profile-body {
+  padding: 24px;
+  text-align: center;
+}
+
+.profile-avatar {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  background: #5a3f9d;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  font-size: 32px;
+  margin: 0 auto 16px;
+  border: 3px solid #3a3a3c;
+}
+
+.profile-info {
+  margin: 16px 0;
+  color: #ddd;
+  font-size: 15px;
+}
+
+.profile-info p {
+  margin: 8px 0;
+  word-break: break-all;
+}
+
+.profile-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.profile-actions button {
+  flex: 1;
+  padding: 12px;
+  border: none;
+  border-radius: 8px;
+  font-size: 15px;
+  cursor: pointer;
+}
+
+.profile-actions button:first-child {
+  background: #3a3a3c;
+  color: white;
+}
+
+.profile-actions button.btn-logout {
+  background: #e74c3c;
+  color: white;
+}
+
+/* Общие модалки (вход/регистрация) */
+.modal-overlay .form {
+  background: #1c1c1e;
+  padding: 24px;
+  border-radius: 16px;
+  width: 90%;
+  max-width: 400px;
+  border: 1px solid #333;
+  color: white;
+}
+
+.modal-overlay input {
+  width: 100%;
+  padding: 12px;
+  margin: 8px 0;
+  background: #2c2c2e;
+  border: 1px solid #444;
+  border-radius: 8px;
+  color: white;
+  font-size: 16px;
+}
+
+.modal-overlay button {
+  margin-top: 12px;
+  width: 100%;
+  padding: 12px;
+  background: #5a3f9d;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 16px;
+  cursor: pointer;
+}
+
+.modal-overlay a {
+  color: #5a3f9d;
+  cursor: pointer;
+}
+
+/* Анимации */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
