@@ -50,6 +50,7 @@ window.addEventListener('load', async () => {
       await loadUserList();
       restoreRecentDMs();
       startRealtime();
+      initCallChannel(); // Инициализация голосовых звонков
     } else {
       showAuthScreen();
     }
@@ -64,6 +65,7 @@ window.addEventListener('load', async () => {
           loadUserList();
           restoreRecentDMs();
           startRealtime();
+          initCallChannel();
         });
       } else if (event === 'SIGNED_OUT') {
         showAuthScreen();
@@ -251,6 +253,7 @@ function openDM(userId) {
   backBtn.style.display = 'block';
   loadMessages();
   addToRecentDMs(userId);
+  addCallButton(userId); // Показываем кнопку звонка
 }
 
 // === ВОЗВРАТ В ОБЩИЙ ЧАТ ===
@@ -361,7 +364,7 @@ if (dmSearchInput) {
   });
 }
 
-// === ЗАГРУЗКА ПОЛЬЗОВАТЕЛЕЙ (справа) ===
+// === ЗАГРУЗКА ПОЛЬЗОВАТЕЛЕЙ ===
 async function loadUserList() {
   if (!userList || !currentUser) return;
 
@@ -432,7 +435,7 @@ function startRealtime() {
     });
 }
 
-// === КНОПКА "ПОКАЗАТЬ ПОЛЬЗОВАТЕЛЕЙ" (на мобильных) ===
+// === КНОПКА "ПОКАЗАТЬ ПОЛЬЗОВАТЕЛЕЙ" ===
 function createUsersToggle() {
   const existing = document.querySelector('.toggle-users-btn');
   if (existing) return;
@@ -516,12 +519,14 @@ async function register() {
     closeModal();
   }
 }
-// === WEBRTC: УПРАВЛЕНИЕ ЗВОНКАМИ ===
+
+// === 📞 ГОЛОСОВЫЕ ЗВОНКИ (WebRTC + Supabase Realtime) ===
+
 const peerConnections = {};
 const localStream = new Map(); // userId → stream
 let rtcChannel = null;
 
-// Создаём канал для звонков
+// Инициализация канала звонков
 function initCallChannel() {
   rtcChannel = supabaseClient.channel('calls');
   rtcChannel
@@ -532,7 +537,7 @@ function initCallChannel() {
     .subscribe();
 }
 
-// Запуск камеры/микрофона
+// Получение доступа к микрофону
 async function getMediaStream(userId) {
   if (localStream.has(userId)) return localStream.get(userId);
 
@@ -577,6 +582,7 @@ function handleOffer(payload) {
   showModalCall('Входящий звонок', `${getUserDisplayName(from)} звонит...`, () => acceptCall(from, offer));
 }
 
+// Показ модалки звонка
 function showModalCall(title, msg, onAccept) {
   document.getElementById('callTitle').textContent = title;
   document.getElementById('callMessage').textContent = msg;
@@ -633,7 +639,7 @@ function handleCandidate(payload) {
   peer.addIceCandidate(new RTCIceCandidate(candidate));
 }
 
-// Добавление кандидата
+// Настройка ICE
 function setupIceHandling(peer, userId) {
   peer.onicecandidate = (e) => {
     if (e.candidate) {
@@ -646,17 +652,17 @@ function setupIceHandling(peer, userId) {
   };
 }
 
-// Создание соединения
+// Создание WebRTC соединения
 function createPeerConnection(userId) {
   const peer = new RTCPeerConnection({
-    iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] // STUN сервер
+    iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
   });
 
   setupIceHandling(peer, userId);
   peerConnections[userId] = peer;
 
   peer.ontrack = (e) => {
-    // Можно добавить воспроизведение, но пока просто игнорируем (браузер сам играет)
+    // Можно добавить <audio>, если нужно явное управление
   };
 
   peer.onconnectionstatechange = () => {
@@ -668,7 +674,7 @@ function createPeerConnection(userId) {
   return peer;
 }
 
-// Показ индикатора
+// Показ индикатора звонка
 function showCallIndicator(userId, status) {
   const indicator = document.getElementById('callIndicator');
   const avatar = document.getElementById('callAvatar');
@@ -683,7 +689,7 @@ function showCallIndicator(userId, status) {
   indicator.onclick = () => endCall(userId);
 }
 
-// Простая генерация цвета по email
+// Генерация цвета аватарки
 function getUserColor(email) {
   let hash = 0;
   for (let i = 0; i < email.length; i++) {
@@ -726,32 +732,22 @@ function handleHangup(payload) {
   alert('Собеседник завершил звонок');
 }
 
-// === ДОБАВЛЕНИЕ КНОПКИ "ПОЗВОНИТЬ" В ЛС ===
+// Добавление кнопки "📞 Позвонить"
 function addCallButton(userId) {
+  const list = document.querySelector('.dm-list');
+  if (!list) return;
+
+  // Удаляем старую, чтобы не дублировать
+  const existing = list.querySelector(`[data-call="${userId}"]`);
+  if (existing) existing.remove();
+
   const el = document.createElement('div');
   el.className = 'dm-item';
+  el.setAttribute('data-call', userId);
   el.title = `Позвонить ${getUserDisplayName(userId)}`;
   el.innerHTML = '📞';
   el.style.background = '#43b581';
   el.style.marginTop = '10px';
   el.onclick = () => startCall(userId);
-  document.querySelector('.dm-list').appendChild(el);
+  list.appendChild(el);
 }
-
-// После входа — инициализируем звонки
-window.addEventListener('load', () => {
-  setTimeout(() => {
-    if (currentUser) {
-      initCallChannel();
-      // Пример: добавить кнопку вызова первому из недавних
-      recentDMs.forEach((_, userId) => {
-        addCallButton(userId);
-      });
-    }
-  }, 1000);
-});
-
-// При открытии ЛС — можно добавить кнопку
-// (или всегда держать в dm-list)
-
-
