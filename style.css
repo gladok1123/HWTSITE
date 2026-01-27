@@ -5,7 +5,7 @@
 }
 
 body {
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
   background-color: #000;
   color: #fff;
   height: 100vh;
@@ -25,14 +25,13 @@ body {
   overflow: hidden;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
   background: #000;
-  margin-top: 20px;
-  margin-bottom: 20px;
+  margin: 16px;
 }
 
 .header {
-  backdrop-filter: blur(20px) saturate(150%);
-  -webkit-backdrop-filter: blur(20px) saturate(150%);
-  background: rgba(30, 30, 32, 0.85);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  background: rgba(30, 30, 32, 0.9);
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
   display: flex;
   justify-content: space-between;
@@ -78,20 +77,24 @@ body {
 
 .main h2 {
   margin-bottom: 16px;
+  font-size: 24px;
 }
 
 .main p {
   color: #aaa;
   margin-bottom: 32px;
+  font-size: 15px;
 }
 
 .main button {
   margin: 0 8px;
-  padding: 10px 20px;
+  padding: 12px 24px;
   border: none;
   border-radius: 8px;
   font-size: 15px;
+  font-weight: 500;
   cursor: pointer;
+  transition: all 0.2s;
 }
 
 .main button:first-child {
@@ -102,6 +105,11 @@ body {
 .main button:last-child {
   background: #3a3a3c;
   color: white;
+}
+
+.main button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
 }
 
 .chat-container {
@@ -124,7 +132,7 @@ body {
   max-width: 75%;
   padding: 10px 14px;
   border-radius: 18px 18px 18px 4px;
-  background: rgba(58, 58, 60, 0.5);
+  background: rgba(58, 58, 60, 0.6);
   backdrop-filter: blur(4px);
   -webkit-backdrop-filter: blur(4px);
   color: #fff;
@@ -133,6 +141,7 @@ body {
   word-wrap: break-word;
   align-self: flex-start;
   margin-bottom: 2px;
+  position: relative;
 }
 
 .message.own {
@@ -155,12 +164,13 @@ body {
   align-items: center;
   padding: 14px 16px;
   margin: 0 8px 8px 8px;
-  backdrop-filter: blur(20px) saturate(130%);
-  -webkit-backdrop-filter: blur(20px) saturate(130%);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
   background: rgba(30, 30, 32, 0.9);
   border-top: 1px solid rgba(255, 255, 255, 0.1);
   gap: 12px;
   border-radius: 16px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.3);
 }
 
 #messageText {
@@ -174,6 +184,7 @@ body {
   outline: none;
   resize: none;
   max-height: 120px;
+  min-height: 24px;
 }
 
 #messageText::placeholder {
@@ -192,9 +203,14 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
+  transition: background 0.2s, transform 0.1s;
 }
 
-/* Аватарки в сообщениях */
+#sendBtn:hover {
+  background: #8a6de9;
+  transform: scale(1.05);
+}
+
 .msg-avatar {
   width: 28px;
   height: 28px;
@@ -209,7 +225,7 @@ body {
   margin-right: 8px;
 }
 
-/* Модалки */
+/* === МОДАЛЬНЫЕ ОКНА === */
 .profile-modal {
   position: fixed;
   top: 0;
@@ -224,14 +240,15 @@ body {
 }
 
 .profile-content {
-  background: rgba(30, 30, 32, 0.95);
-  backdrop-filter: blur(24px);
-  -webkit-backdrop-filter: blur(24px);
   width: 90%;
   max-width: 400px;
   border-radius: 16px;
   overflow: hidden;
+  background: rgba(30, 30, 32, 0.95);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
   border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
 }
 
 .profile-header {
@@ -241,6 +258,12 @@ body {
   text-align: center;
   font-size: 18px;
   font-weight: 600;
+}
+
+.profile-body {
+  padding: 24px;
+  text-align: center;
+  color: #ddd;
 }
 
 .profile-avatar {
@@ -271,10 +294,16 @@ body {
   border-radius: 50%;
   cursor: pointer;
   border: 3px solid transparent;
+  transition: transform 0.1s;
+}
+
+.avatar-option:hover {
+  transform: scale(1.1);
 }
 
 .avatar-option.selected {
   border-color: #fff;
+  box-shadow: 0 0 0 2px rgba(122, 92, 232, 0.5);
 }
 
 .color-1 { background: #7a5ce8; }
@@ -285,6 +314,53 @@ body {
 
 .profile-info {
   margin: 16px 0;
+  font-size: 15px;
+  color: #ddd;
+}
+
+.profile-info p {
+  margin: 6px 0;
+  word-break: break-all;
+}
+
+/* === СПИСОК ПОЛЬЗОВАТЕЛЕЙ И ЛИЧНЫЕ ЧАТЫ === */
+.dm-list {
+  margin: 16px 0;
+  max-height: 200px;
+  overflow-y: auto;
+  border-bottom: 1px solid rgba(85, 85, 85, 0.3);
+  padding-bottom: 12px;
+}
+
+.dm-item {
+  display: flex;
+  align-items: center;
+  padding: 8px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.2s;
+  margin: 4px 0;
+}
+
+.dm-item:hover {
+  background: rgba(58, 58, 60, 0.4);
+}
+
+.dm-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: #7a5ce8;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  margin-right: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.dm-name {
   font-size: 15px;
   color: #ddd;
 }
@@ -303,6 +379,7 @@ body {
   border-radius: 8px;
   font-size: 15px;
   cursor: pointer;
+  transition: background 0.2s;
 }
 
 .profile-actions button:first-child {
@@ -310,7 +387,15 @@ body {
   color: white;
 }
 
+.profile-actions button:first-child:hover {
+  background: rgba(70, 70, 72, 0.8);
+}
+
 .profile-actions button.btn-logout {
   background: #e74c3c;
   color: white;
+}
+
+.profile-actions button.btn-logout:hover {
+  background: #f45b4d;
 }
