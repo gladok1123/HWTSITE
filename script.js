@@ -10,6 +10,9 @@ let currentUser = null;
 let currentAvatarColor = '#7a5ce8';
 let activeDM = null; // null = общий чат
 
+// === ХРАНЕНИЕ НЕДАВНИХ ЛС ===
+const recentDMs = new Set(); // ID пользователей
+
 // === DOM-ЭЛЕМЕНТЫ ===
 const messageList = document.getElementById('messageList');
 const chatContainer = document.querySelector('.chat-container');
@@ -29,11 +32,11 @@ window.addEventListener('load', async () => {
       await loadMessages();
       await loadUserList();
       startRealtime();
+      updateRecentDMs(); // Показываем сохранённые ЛС
     } else {
       showAuthScreen();
     }
 
-    // Отслеживаем изменения авторизации
     supabaseClient.auth.onAuthStateChange(async (event, session) => {
       currentUser = session?.user || null;
       if (event === 'SIGNED_IN') {
@@ -42,6 +45,7 @@ window.addEventListener('load', async () => {
         await loadMessages();
         await loadUserList();
         startRealtime();
+        updateRecentDMs();
       } else if (event === 'SIGNED_OUT') {
         showAuthScreen();
       }
@@ -51,7 +55,7 @@ window.addEventListener('load', async () => {
   }
 });
 
-// === ЗАГРУЗКА НАСТРОЕК ПОЛЬЗОВАТЕЛЯ ===
+// === ЗАГРУЗКА ЦВЕТА АВАТАРКИ ===
 async function loadUserSettings() {
   try {
     const { data, error } = await supabaseClient
@@ -87,10 +91,8 @@ async function ensureUserRecord(color) {
 function showAuthScreen() {
   authScreen.style.display = 'flex';
   const app = document.querySelector('.discord-app');
-  if (app) {
-    app.style.display = 'none';
-  }
-  // Удаляем кнопку пользователей, если есть
+  if (app) app.style.display = 'none';
+
   const toggleBtn = document.querySelector('.toggle-users-btn');
   if (toggleBtn) toggleBtn.remove();
 }
@@ -98,11 +100,8 @@ function showAuthScreen() {
 function showMainApp() {
   authScreen.style.display = 'none';
   const app = document.querySelector('.discord-app');
-  if (app) {
-    app.style.display = 'flex';
-  }
+  if (app) app.style.display = 'flex';
 
-  // Создаём кнопку "Показать пользователей" на мобильных
   if (window.innerWidth <= 768) {
     setTimeout(createUsersToggle, 500);
   }
@@ -157,13 +156,10 @@ async function loadMessages() {
     .limit(100);
 
   if (activeDM) {
-    // Личные сообщения
     query = query.or(
       `and(user_id.eq.${currentUser.id},dm_with.eq.${activeDM}),and(user_id.eq.${activeDM},dm_with.eq.${currentUser.id})`
     );
-
   } else {
-    // Общий чат
     query = query.is('dm_with', null);
   }
 
@@ -181,13 +177,21 @@ async function loadMessages() {
       empty.style.padding = '20px';
       messageList.appendChild(empty);
     } else {
-      data.forEach(addMessageToDOM);
+      data.forEach(msg => {
+        addMessageToDOM(msg);
+
+        // Добавляем в недавние ЛС
+        if (msg.dm_with) {
+          const otherId = msg.user_id === currentUser.id ? msg.dm_with : msg.user_id;
+          addToRecentDMs(otherId);
+        }
+      });
     }
 
     scrollToBottom();
   } catch (err) {
     console.error('Ошибка загрузки сообщений:', err);
-    messageList.innerHTML = '<div style="color:red">Ошибка загрузки</div>';
+    messageList.innerHTML = '<div style="color:red">Ошибка</div>';
   }
 }
 
@@ -241,7 +245,6 @@ async function loadUserList() {
       return;
     }
 
-    // Очищаем, но оставляем заголовок
     const header = userList.querySelector('.user-header');
     userList.innerHTML = '';
     if (header) {
@@ -254,6 +257,7 @@ async function loadUserList() {
     data.forEach(user => {
       const el = document.createElement('div');
       el.className = 'user-item';
+      el.setAttribute('data-user-id', user.id);
       el.onclick = () => openDM(user.id);
       el.innerHTML = `
         <div class="user-avatar-small" style="background:${user.avatar_color}">
@@ -271,9 +275,47 @@ async function loadUserList() {
 // === ПЕРЕКЛЮЧЕНИЕ НА ЛИЧНЫЙ ЧАТ ===
 function openDM(userId) {
   activeDM = userId;
-  const name = document.querySelector(`[data-user-id="${userId}"]`)?.textContent || 'Личный чат';
+  const name = document.querySelector(`[data-user-id="${userId}"] .user-name`)?.textContent || 'Пользователь';
   document.querySelector('.channel-header span').textContent = `ЛС с ${name}`;
   loadMessages();
+  addToRecentDMs(userId);
+}
+
+// === ДОБАВЛЕНИЕ В НЕДАВНИЕ ЛС ===
+function addToRecentDMs(userId) {
+  if (userId === currentUser.id) return;
+  recentDMs.add(userId);
+  updateRecentDMs();
+}
+
+// === ОБНОВЛЕНИЕ СПИСКА ЛС СЛЕВА ===
+function updateRecentDMs() {
+  const container = document.getElementById('dmList');
+  if (!container) return;
+
+  container.innerHTML = '';
+
+  Array.from(recentDMs).forEach(userId => {
+    const el = document.createElement('div');
+    el.className = 'dm-item';
+    el.title = 'Открыть личный чат';
+    el.onclick = () => openDM(userId);
+    el.textContent = '?';
+    container.appendChild(el);
+
+    supabaseClient
+      .from('users')
+      .select('email, avatar_color')
+      .eq('id', userId)
+      .single()
+      .then(({ data }) => {
+        if (data) {
+          el.textContent = data.email[0].toUpperCase();
+          el.style.background = data.avatar_color;
+        }
+      })
+      .catch(console.error);
+  });
 }
 
 // === РЕАЛЬНОЕ ВРЕМЯ (НОВЫЕ СООБЩЕНИЯ) ===
@@ -284,51 +326,39 @@ function startRealtime() {
       event: 'INSERT',
       schema: 'public',
       table: 'messages',
-    }, (payload) => {
+    }, async (payload) => {
       const msg = payload.new;
+
       const isRelevant =
         !msg.dm_with ||
         msg.user_id === currentUser.id ||
         msg.dm_with === currentUser.id;
 
       if (isRelevant) {
-        addMessageToDOM(msg);
+        // Если это ЛС — добавляем в недавние
+        if (msg.dm_with && (msg.user_id === currentUser.id || msg.dm_with === currentUser.id)) {
+          const otherId = msg.user_id === currentUser.id ? msg.dm_with : msg.user_id;
+          addToRecentDMs(otherId);
+        }
+
+        // Проверяем, отображать ли сейчас
+        if (
+          !msg.dm_with || // Общее
+          (activeDM && (msg.user_id === currentUser.id || msg.dm_with === currentUser.id))
+        ) {
+          addMessageToDOM(msg);
+        }
       }
     })
     .subscribe((status, err) => {
-      if (err) {
-        console.error('Realtime ошибка:', err);
-      } else {
-        console.log('Realtime подключён:', status);
-      }
+      if (err) console.error('Realtime ошибка:', err);
     });
-}
-
-function startUserRealtime() {
-  supabaseClient
-    .channel('users')
-    .on('postgres_changes', {
-      event: 'INSERT',
-      schema: 'public',
-      table: 'users',
-    }, () => loadUserList())
-    .on('postgres_changes', {
-      event: 'UPDATE',
-      schema: 'public',
-      table: 'users',
-    }, () => loadUserList())
-    .on('postgres_changes', {
-      event: 'DELETE',
-      schema: 'public',
-      table: 'users',
-    }, () => loadUserList())
-    .subscribe();
 }
 
 // === КНОПКА "ПОКАЗАТЬ ПОЛЬЗОВАТЕЛЕЙ" (МОБИЛЬНЫЕ) ===
 function createUsersToggle() {
   const existing = document.querySelector('.toggle-users-btn');
-  if (existing) return; // Не создавать дважды
+  if (existing) return;
 
   const btn = document.createElement('button');
   btn.innerHTML = '👥';
@@ -343,7 +373,7 @@ function createUsersToggle() {
   document.body.appendChild(btn);
 }
 
-// === ОБРАБОТКА ИЗМЕНЕНИЯ РАЗМЕРА ОКНА ===
+// === ОБРАБОТКА ИЗМЕНЕНИЯ РАЗМЕРА ===
 window.addEventListener('resize', () => {
   const usersBtn = document.querySelector('.toggle-users-btn');
   const usersPanel = document.querySelector('.users');
@@ -374,17 +404,11 @@ function showModal(title, body, onConfirm) {
   document.getElementById('confirmBtn').onclick = onConfirm;
 }
 
-
 function closeModal() {
   modal.style.display = 'none';
 }
 
-function confirmModal(fn) {
-  fn();
-  closeModal();
-}
-
-// === ФОРМЫ ВХОДА / РЕГИСТРАЦИИ ===
+// === ФОРМЫ ===
 function showLogin() {
   showModal('Вход', `
     <input id="loginEmail" type="email" placeholder="Email">
@@ -427,23 +451,7 @@ async function register() {
   if (error) {
     alert('Ошибка: ' + error.message);
   } else {
-    alert('Проверьте почту для подтверждения регистрации');
+    alert('Проверьте почту для подтверждения');
     closeModal();
   }
 }
-const userColors = {};
-
-async function getUserColor(userId) {
-  if (userColors[userId]) return userColors[userId];
-
-  const { data } = await supabaseClient
-    .from('users')
-    .select('avatar_color')
-    .eq('id', userId)
-    .single();
-
-  const color = data?.avatar_color || '#7a5ce8';
-  userColors[userId] = color;
-  return color;
-}
-
