@@ -7,22 +7,26 @@
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
+  <div class="background"></div>
   <div class="app" id="app">
     <!-- Header -->
     <header class="header">
       <h1 class="logo">💬 Чат</h1>
       <nav id="nav">
-        <!-- Кнопки входа или аватар -->
+        <!-- Аватар или кнопки -->
       </nav>
     </header>
 
+    <!-- Основной экран -->
+    <div class="main" id="main"></div>
+
     <!-- Чат -->
-    <div class="chat-container">
+    <div class="chat-container" style="display: none;">
       <div class="messages-list" id="messageList"></div>
     </div>
 
     <!-- Панель ввода -->
-    <div class="input-area">
+    <div class="input-area" style="display: none;">
       <textarea id="messageText" placeholder="Сообщение..." rows="1"></textarea>
       <button id="sendBtn" onclick="sendMessage()">➤</button>
     </div>
