@@ -154,7 +154,6 @@ body {
   border-radius: 18px 18px 4px 18px;
 }
 
-
 .message-header {
   font-size: 12px;
   color: #aaa;
@@ -464,4 +463,5 @@ body {
     transform: scale(1);
   }
 }
+
 
