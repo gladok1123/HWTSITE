@@ -12,7 +12,7 @@ let activeDM = null;
 
 const recentDMs = new Map(); // userId → { email, avatar_color }
 
-// DOM-элементы (могут быть null при старте)
+// DOM-элементы
 const messageList = document.getElementById('messageList');
 const chatContainer = document.querySelector('.chat-container');
 const userList = document.getElementById('userList');
@@ -78,7 +78,7 @@ window.addEventListener('load', async () => {
 
 // === ЗАГРУЗКА ЦВЕТА АВАТАРКИ ===
 async function loadUserSettings() {
-  if (!currentUser) return; // 🔐 Защита от null
+  if (!currentUser) return;
 
   try {
     const { data, error } = await supabaseClient
@@ -159,7 +159,7 @@ document.getElementById('sendBtn')?.addEventListener('click', async () => {
   }
 });
 
-// === РЕГУЛИРОВКА ВЫСОТЫ ТЕКСТОВОГО ПОЛЯ ===
+// === РЕГУЛИРОВКА ВЫСОТЫ ПОЛЯ ===
 function adjustTextareaHeight(el) {
   el.style.height = 'auto';
   el.style.height = Math.min(el.scrollHeight, 120) + 'px';
@@ -207,7 +207,7 @@ async function loadMessages() {
     scrollToBottom();
   } catch (err) {
     console.error('Ошибка загрузки сообщений:', err);
-    messageList.innerHTML = '<div style="color:red">Ошибка загрузки</div>';
+    messageList.innerHTML = '<div style="color:red">Ошибка</div>';
   }
 }
 
@@ -267,8 +267,7 @@ if (backBtn) {
 
 // === РАБОТА С НЕДАВНИМИ ЛС ===
 function trackRecentDM(msg) {
-  if (!msg.dm_with) return;
-  if (msg.user_id === currentUser.id || msg.dm_with === currentUser.id) {
+  if (msg.dm_with && (msg.user_id === currentUser.id || msg.dm_with === currentUser.id)) {
     const otherId = msg.user_id === currentUser.id ? msg.dm_with : msg.user_id;
     addToRecentDMs(otherId);
   }
@@ -336,7 +335,7 @@ function getUserDisplayName(userId) {
   return user ? user.email.split('@')[0] : 'Пользователь';
 }
 
-// === ПОИСК ПО НИКУ (в поле "+" внизу ЛС) ===
+// === ПОИСК ПО НИКУ ===
 if (dmSearchInput) {
   dmSearchInput.addEventListener('keypress', async function (e) {
     if (e.key === 'Enter') {
@@ -362,7 +361,7 @@ if (dmSearchInput) {
   });
 }
 
-// === ЗАГРУЗКА СПИСКА ПОЛЬЗОВАТЕЛЕЙ (справа) ===
+// === ЗАГРУЗКА ПОЛЬЗОВАТЕЛЕЙ (справа) ===
 async function loadUserList() {
   if (!userList || !currentUser) return;
 
@@ -513,7 +512,7 @@ async function register() {
   if (error) {
     alert('Ошибка: ' + error.message);
   } else {
-    alert('Регистрация успешна! Проверьте почту для подтверждения.');
+    alert('Регистрация успешна! Проверьте почту.');
     closeModal();
   }
 }
