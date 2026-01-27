@@ -5,7 +5,7 @@
 }
 
 body {
-  font-family: 'Whitney', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  font-family: 'Whitney', 'Helvetica Neue', Arial, sans-serif;
   background-color: #1a1a1a;
   color: #dcddde;
   height: 100vh;
@@ -28,14 +28,12 @@ body {
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
 }
 
-/* === БОКОВЫЕ ПАНЕЛИ === */
+/* === ЛЕВАЯ ПАНЕЛЬ: Серверы и ЛС === */
 .sidebar {
   z-index: 10;
   user-select: none;
-  transition: width 0.3s ease;
 }
 
-/* === ЛЕВАЯ ПАНЕЛЬ: Серверы и ЛС === */
 .servers {
   width: 72px;
   background: #202225;
@@ -43,62 +41,41 @@ body {
   display: flex;
   flex-direction: column;
   align-items: center;
+  height: 100%;
   position: relative;
   flex-shrink: 0;
-  height: 100%;
 }
 
-.server-icon {
-  width: 48px;
-  height: 48px;
-  border-radius: 8px;
-  background: #7289da;
-  color: white;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 24px;
-  margin: 8px 0;
-  cursor: pointer;
-  transition: background 0.2s, transform 0.2s;
-}
-
-.server-icon:hover {
-  background: #677bc4;
-  transform: scale(1.05);
-}
-
-/* === НЕДАВНИЕ ЛИЧНЫЕ ЧАТЫ === */
-.dm-list {
-  margin-top: auto;
-  width: 100%;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 8px;
-  padding-bottom: 10px;
-}
-
+.server-icon,
 .dm-item {
   width: 48px;
   height: 48px;
   border-radius: 8px;
-  background: #7289da;
-  color: white;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-weight: bold;
-  font-size: 18px;
   cursor: pointer;
-  transition: background 0.2s, transform 0.2s;
+  transition: all 0.2s ease;
+  margin: 4px 0;
+  font-weight: bold;
+  color: white;
   position: relative;
-  overflow: hidden;
 }
 
+.server-icon {
+  background: #7289da;
+  font-size: 24px;
+}
+
+.server-icon:hover,
 .dm-item:hover {
   transform: scale(1.05);
-  background: #677bc4;
+}
+
+.dm-item {
+  background: #4f545c;
+  font-size: 18px;
+  overflow: hidden;
 }
 
 .dm-item::after {
@@ -113,7 +90,18 @@ body {
   border: 2px solid #202225;
 }
 
-/* === ЦЕНТРАЛЬНАЯ ПАНЕЛЬ: Чат === */
+/* === Недавние ЛС — внизу === */
+.dm-list {
+  margin-top: auto;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding-bottom: 10px;
+}
+
+/* === ЦЕНТРАЛЬНЫЙ ЧАТ === */
 .main-panel {
   flex: 1;
   display: flex;
@@ -129,8 +117,8 @@ body {
   align-items: center;
   padding: 0 16px;
   font-size: 16px;
-  color: #dcddde;
   font-weight: 600;
+  color: #dcddde;
   background: #2f3136;
 }
 
@@ -159,8 +147,6 @@ body {
   width: 40px;
   height: 40px;
   border-radius: 50%;
-  background: #7289da;
-  color: white;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -186,9 +172,6 @@ body {
 .message .author {
   font-weight: 600;
   color: #ffffff;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
   cursor: pointer;
 }
 
@@ -244,7 +227,6 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: background 0.2s;
 }
 
 #sendBtn:hover {
@@ -259,12 +241,13 @@ body {
   padding: 10px 0;
   color: #b9bbbe;
   font-size: 14px;
-  transition: transform 0.3s ease;
   position: absolute;
   top: 0;
   right: 0;
   height: 100%;
   z-index: 10;
+  transition: transform 0.3s ease;
+  transform: translateX(0);
 }
 
 .users.show {
@@ -302,8 +285,6 @@ body {
   width: 32px;
   height: 32px;
   border-radius: 50%;
-  background: #7289da;
-  color: white;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -458,8 +439,7 @@ body {
   color: white;
 }
 
-/* === АДАПТИВНОСТЬ === */
-
+/* === АДАПТИВНОСТЬ (до 768px) === */
 @media (max-width: 768px) {
   .discord-app {
     height: 100vh;
@@ -478,14 +458,16 @@ body {
     position: static;
   }
 
-  .server-icon {
+  .server-icon,
+  .dm-item {
     width: 48px;
     height: 48px;
     margin: 0 8px;
   }
 
+  /* Показываем ЛС в правой панели на мобилках */
   .dm-list {
-    display: none; /* Скрываем ЛС на мобилках — они в правой панели */
+    display: none;
   }
 
   .users {
@@ -498,53 +480,15 @@ body {
     border-top: 1px solid #202225;
     border-left: none;
     transform: translateY(100%);
-    transition: transform 0.3s ease;
     z-index: 10;
   }
 
   .users.show {
     transform: translateY(0);
   }
-
-  .user-header {
-    padding: 12px 12px 8px;
-  }
-
-  .chat-container {
-    padding: 16px 12px;
-  }
-
-  .message .avatar {
-    width: 36px;
-    height: 36px;
-    font-size: 14px;
-  }
-
-  .message .author {
-    font-size: 14px;
-  }
-
-  .message .text {
-    font-size: 14px;
-  }
-
-  .input-area {
-    padding: 10px 12px;
-  }
-
-  #messageText {
-    font-size: 14px;
-    padding: 10px 12px;
-  }
-
-  #sendBtn {
-    width: 40px;
-    height: 40px;
-    font-size: 16px;
-  }
 }
 
-/* === КНОПКА "ПОКАЗАТЬ ПОЛЬЗОВАТЕЛЕЙ" (МОБИЛЬНЫЕ) === */
+/* === Кнопка "Показать пользователей" на мобильных === */
 @media (max-width: 768px) {
   .toggle-users-btn {
     position: absolute;
