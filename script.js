@@ -159,9 +159,9 @@ async function loadMessages() {
   if (activeDM) {
     // Личные сообщения
     query = query.or(
-      `and(user_id.eq.${currentUser.id},dm_with.eq.${activeDM})`,
-      `and(user_id.eq.${activeDM},dm_with.eq.${currentUser.id})`
+      `and(user_id.eq.${currentUser.id},dm_with.eq.${activeDM}),and(user_id.eq.${activeDM},dm_with.eq.${currentUser.id})`
     );
+
   } else {
     // Общий чат
     query = query.is('dm_with', null);
@@ -271,7 +271,8 @@ async function loadUserList() {
 // === ПЕРЕКЛЮЧЕНИЕ НА ЛИЧНЫЙ ЧАТ ===
 function openDM(userId) {
   activeDM = userId;
-  console.log('Переход в ЛС с:', userId);
+  const name = document.querySelector(`[data-user-id="${userId}"]`)?.textContent || 'Личный чат';
+  document.querySelector('.channel-header span').textContent = `ЛС с ${name}`;
   loadMessages();
 }
 
@@ -301,6 +302,27 @@ function startRealtime() {
         console.log('Realtime подключён:', status);
       }
     });
+}
+
+function startUserRealtime() {
+  supabaseClient
+    .channel('users')
+    .on('postgres_changes', {
+      event: 'INSERT',
+      schema: 'public',
+      table: 'users',
+    }, () => loadUserList())
+    .on('postgres_changes', {
+      event: 'UPDATE',
+      schema: 'public',
+      table: 'users',
+    }, () => loadUserList())
+    .on('postgres_changes', {
+      event: 'DELETE',
+      schema: 'public',
+      table: 'users',
+    }, () => loadUserList())
+    .subscribe();
 }
 
 // === КНОПКА "ПОКАЗАТЬ ПОЛЬЗОВАТЕЛЕЙ" (МОБИЛЬНЫЕ) ===
@@ -345,11 +367,13 @@ function showModal(title, body, onConfirm) {
       <div class="modal-body">${body}</div>
       <div class="modal-footer">
         <button onclick="closeModal()">Отмена</button>
-        <button onclick="confirmModal(${onConfirm.toString()})">Ок</button>
+        <button id="confirmBtn">Ок</button>
       </div>
     </div>
   `;
+  document.getElementById('confirmBtn').onclick = onConfirm;
 }
+
 
 function closeModal() {
   modal.style.display = 'none';
@@ -407,3 +431,19 @@ async function register() {
     closeModal();
   }
 }
+const userColors = {};
+
+async function getUserColor(userId) {
+  if (userColors[userId]) return userColors[userId];
+
+  const { data } = await supabaseClient
+    .from('users')
+    .select('avatar_color')
+    .eq('id', userId)
+    .single();
+
+  const color = data?.avatar_color || '#7a5ce8';
+  userColors[userId] = color;
+  return color;
+}
+
