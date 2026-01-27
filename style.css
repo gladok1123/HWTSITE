@@ -574,7 +574,7 @@ body {
   }
 }
 
-/* === КНОПКА "ПОКАЗАТЬ ПОЛЬЗОВАТЕЛЕЙ" (МОБИЛЬНЫЕ) === */
+/* === КНОПКА "ПОКАЗАТЬ ПОЛЬЗОВАТЕЛЕЙ" === */
 @media (max-width: 768px) {
   .toggle-users-btn {
     position: absolute;
@@ -725,7 +725,6 @@ body {
   color: white;
 }
 
-/* === ИНДИКАТОР ЗВОНКА === */
 .call-indicator {
   position: fixed;
   bottom: 20px;
@@ -740,6 +739,7 @@ body {
   display: flex;
   align-items: center;
   gap: 8px;
+  cursor: pointer;
 }
 
 .call-indicator .avatar {
