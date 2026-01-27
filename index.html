@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>GigaChat</title>
+  <title>HWT</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
@@ -49,7 +49,7 @@
   <!-- Экран входа -->
   <div class="auth-screen" id="authScreen">
     <div class="auth-box">
-      <h2>💬 GigaChat</h2>
+      <h2>💬 HWT</h2>
       <p>Войдите, чтобы начать общение</p>
       <button onclick="showLogin()">Войти</button>
       <button onclick="showRegister()">Регистрация</button>
@@ -62,5 +62,23 @@
   <!-- Скрипты -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="script.js"></script>
+  <!-- МОДАЛЬНОЕ ОКНО ЗВОНКА -->
+  <div id="callModal" class="call-modal" style="display: none;">
+    <div class="call-content">
+      <h3 id="callTitle">Звонок</h3>
+      <p id="callMessage">Идёт соединение...</p>
+      <div class="call-actions">
+        <button id="callAccept" class="call-btn call-accept">Принять</button>
+        <button id="callDecline" class="call-btn call-decline">Отклонить</button>
+      </div>
+    </div>
+  </div>
+  
+  <!-- ИНДИКАТОР АКТИВНОГО ЗВОНКА -->
+  <div id="callIndicator" class="call-indicator" style="display: none;">
+    <div class="avatar" id="callAvatar">?</div>
+    <span id="callStatus">На связи...</span>
+  </div>
 </body>
 </html>
+
