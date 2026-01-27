@@ -17,7 +17,7 @@ window.addEventListener('load', async () => {
   currentUser = session?.user || null;
 
   if (currentUser) {
-    await ensureUserRecord(); // Сохраняем пользователя в таблицу users
+    await loadUserSettings(); // Загружаем цвет из базы
     setupNav();
     loadMessages();
     startRealtime();
@@ -29,37 +29,19 @@ window.addEventListener('load', async () => {
   supabaseClient.auth.onAuthStateChange(async (event, session) => {
     currentUser = session?.user || null;
     if (event === 'SIGNED_IN') {
-      await ensureUserRecord();
+      await loadUserSettings();
       setupNav();
       loadMessages();
       startRealtime();
     } else if (event === 'SIGNED_OUT') {
+      currentUser = null;
+      currentAvatarColor = '#7a5ce8';
       renderAuthScreen();
     }
   });
 });
 
-// === УБЕДИТЬСЯ, ЧТО ПОЛЬЗОВАТЕЛЬ ЕСТЬ В ТАБЛИЦЕ users ===
-async function ensureUserRecord() {
-  const { error } = await supabaseClient.from('users').upsert({
-    id: currentUser.id,
-    email: currentUser.email,
-    avatar_color: currentAvatarColor,
-    updated_at: new Date().toISOString(),
-  });
-  if (error) console.error('Ошибка сохранения пользователя:', error);
-}
-
-// === СОХРАНЕНИЕ ЦВЕТА АВАТАРКИ ===
-function setAvatarColor(color) {
-  currentAvatarColor = color;
-  localStorage.setItem(`avatarColor_${currentUser.id}`, color);
-
-  const avatar = document.querySelector('.user-avatar');
-  if (avatar) avatar.style.background = color;
-}
-
-// === ЗАГРУЗКА ЦВЕТА ИЗ БАЗЫ ===
+// === ЗАГРУЗКА НАСТРОЕК ПОЛЬЗОВАТЕЛЯ ===
 async function loadUserSettings() {
   const { data, error } = await supabaseClient
     .from('users')
@@ -68,14 +50,46 @@ async function loadUserSettings() {
     .single();
 
   if (error) {
-    console.warn('Цвет не найден, используем стандартный');
-  } else if (data?.avatar_color) {
-    currentAvatarColor = data.avatar_color;
-  } else {
+    console.warn('Цвет не найден, создаём запись...');
+    await ensureUserRecord('#7a5ce8');
     currentAvatarColor = '#7a5ce8';
+  } else {
+    currentAvatarColor = data.avatar_color || '#7a5ce8';
   }
+}
 
-  localStorage.setItem(`avatarColor_${currentUser.id}`, currentAvatarColor);
+// === СОХРАНЕНИЕ ПОЛЬЗОВАТЕЛЯ И ЦВЕТА ===
+async function ensureUserRecord(color) {
+  const { error } = await supabaseClient.from('users').upsert({
+    id: currentUser.id,
+    email: currentUser.email,
+    avatar_color: color,
+    updated_at: new Date().toISOString(),
+  });
+  if (error) console.error('Ошибка сохранения:', error);
+}
+
+// === СМЕНА ЦВЕТА АВАТАРКИ ===
+async function changeAvatarColor(color) {
+  currentAvatarColor = color;
+
+  // Обновляем в DOM
+  const avatar = document.querySelector('.user-avatar');
+  if (avatar) avatar.style.background = color;
+
+  // Обновляем в профиле
+  const profileAvatar = document.querySelector('.profile-avatar');
+  if (profileAvatar) profileAvatar.style.background = color;
+
+  // Сохраняем в базу
+  await ensureUserRecord(color);
+
+  // Обновляем выбранный цвет
+  document.querySelectorAll('.avatar-option').forEach(el => {
+    el.classList.toggle('selected', el.style.background === color);
+  });
+
+  console.log('Цвет сохранён:', color);
 }
 
 // === НАВИГАЦИЯ ===
@@ -91,9 +105,10 @@ function setupNav() {
 
 // === ЭКРАН АВТОРИЗАЦИИ ===
 function renderAuthScreen() {
-  main.innerHTML = `
+  if (!document.getElementById('main')) return;
+  document.getElementById('main').innerHTML = `
     <div class="auth-screen" style="text-align:center; padding:40px 20px;">
-      <h2 style="color:white; margin-bottom:16px;">💬 Добро пожаловать</h2>
+      <h2 style="color:white; margin-bottom:16px;">💬 Чат</h2>
       <p style="color:#aaa; margin-bottom:32px;">Войдите, чтобы начать общение</p>
       <button onclick="showLogin()" style="margin:0 8px;">Войти</button>
       <button onclick="showRegister()" style="margin:0 8px; background:#3a3a3c;">Регистрация</button>
@@ -202,7 +217,6 @@ async function openProfile() {
           <p><strong>Имя:</strong> ${name}</p>
           <p><strong>Email:</strong> ${currentUser.email}</p>
         </div>
-        <div class="dm-list" id="dmList"></div>
         <div class="profile-actions">
           <button onclick="closeModal(this)">Закрыть</button>
           <button onclick="logout()" class="btn-logout">Выйти</button>
@@ -211,21 +225,13 @@ async function openProfile() {
     </div>
   `;
   document.body.appendChild(modal);
-  loadDMList();
 }
 
-function changeAvatarColor(color) {
-  setAvatarColor(color);
-  document.querySelector('.profile-avatar').style.background = color;
-  document.querySelectorAll('.avatar-option').forEach(el => {
-    el.classList.toggle('selected', el.style.background === color);
-  });
-}
-
-// === ВЫХОД ===
+// === ВЫХОД ИЗ АККАУНТА ===
 async function logout() {
   await supabaseClient.auth.signOut();
   closeModal();
+  // Уже обработано в onAuthStateChange
 }
 
 // === ОТПРАВКА СООБЩЕНИЯ ===
@@ -320,8 +326,7 @@ function startRealtime() {
     .channel('chat')
     .on('postgres_changes', {
       event: 'INSERT',
-      schema: 'public',
-      table: 'messages'
+      schema: 'public', table: 'messages'
     }, (payload) => {
       addMessageToDOM(payload.new);
     })
