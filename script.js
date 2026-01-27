@@ -50,7 +50,7 @@ window.addEventListener('load', async () => {
       await loadUserList();
       restoreRecentDMs();
       startRealtime();
-      initCallSystem(); // ← Инициализация звонков
+      initCallSystem();
     } else {
       showAuthScreen();
     }
@@ -541,6 +541,15 @@ function initCallSystem() {
         console.log('Канал звонков активен:', `call_${currentUser.id}`);
       }
     });
+
+  // === РАЗБЛОКИРОВКА АУДИО ПОСЛЕ КЛИКА ===
+  document.body.addEventListener('click', function unlockAudio() {
+    const audio = document.getElementById('remoteAudio');
+    if (audio && audio.paused) {
+      audio.play().catch(() => {});
+    }
+    document.body.removeEventListener('click', unlockAudio);
+  }, { once: true });
 }
 
 // Начать звонок
@@ -680,6 +689,15 @@ function createPeerConnection(userId) {
 
   peerConnections[userId] = pc;
 
+  // === ПРИЁМ УДАЛЁННОГО АУДИО ===
+  pc.ontrack = (event) => {
+    console.log('Получен удалённый аудиопоток');
+    const remoteAudio = document.getElementById('remoteAudio');
+    if (remoteAudio) {
+      remoteAudio.srcObject = event.streams[0];
+    }
+  };
+
   pc.onicecandidate = (e) => {
     if (e.candidate) {
       const targetChannel = supabaseClient.channel(`call_${userId}`);
@@ -689,10 +707,6 @@ function createPeerConnection(userId) {
         payload: { from: currentUser.id, to: userId, candidate: e.candidate }
       });
     }
-  };
-
-  pc.ontrack = (e) => {
-    // Браузер сам воспроизводит аудио
   };
 
   pc.onconnectionstatechange = () => {
@@ -800,7 +814,8 @@ function showCallIndicator(userId, status) {
 }
 
 function hideCallIndicator() {
-  document.getElementById('callIndicator').style.display = 'none';
+  const indicator = document.getElementById('callIndicator');
+  if (indicator) indicator.style.display = 'none';
 }
 
 // Цвет аватарки
@@ -818,6 +833,7 @@ function addCallButton(userId) {
   const list = document.querySelector('.dm-list');
   if (!list) return;
 
+  // Удаляем дубли
   const existing = list.querySelector(`[data-call="${userId}"]`);
   if (existing) existing.remove();
 
@@ -831,3 +847,44 @@ function addCallButton(userId) {
   el.onclick = () => startCall(userId);
   list.appendChild(el);
 }
+// === ИНИЦИАЛИЗАЦИЯ ПРИ СТАРТЕ ===
+window.addEventListener('load', async () => {
+  try {
+    const { data: { session } } = await supabaseClient.auth.getSession();
+    currentUser = session?.user || null;
+
+    if (currentUser) {
+      await loadUserSettings();
+      showMainApp();
+      await loadMessages();
+      await loadUserList();
+      restoreRecentDMs();
+      startRealtime();
+      initCallSystem(); // ← Подключаем звонки
+    } else {
+      showAuthScreen();
+    }
+
+    // Отслеживаем изменения сессии
+    supabaseClient.auth.onAuthStateChange((event, session) => {
+      currentUser = session?.user || null;
+      if (event === 'SIGNED_IN') {
+        loadUserSettings().then(() => {
+          showMainApp();
+          loadMessages();
+          loadUserList();
+          restoreRecentDMs();
+          startRealtime();
+          initCallSystem();
+        });
+      } else if (event === 'SIGNED_OUT') {
+        showAuthScreen();
+      }
+    });
+
+  } catch (err) {
+    console.error('Ошибка инициализации:', err);
+    showAuthScreen();
+  }
+});
+
