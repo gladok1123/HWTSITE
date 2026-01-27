@@ -8,19 +8,26 @@
 </head>
 <body>
   <div class="discord-app">
-    <!-- Левая панель: серверы -->
+    <!-- Левая панель: серверы и личные чаты -->
     <div class="sidebar servers">
+      <!-- Общий чат -->
       <div class="server-icon" title="Общий чат">💬</div>
+
+      <!-- Разделитель -->
+      <div class="divider"></div>
+
+      <!-- Список недавних ЛС -->
+      <div class="dm-list" id="dmList"></div>
     </div>
 
-    <!-- Центральная панель: каналы и чат -->
+    <!-- Центральная панель: чат -->
     <div class="main-panel">
       <!-- Заголовок канала -->
       <div class="channel-header">
         <span># общий</span>
       </div>
 
-      <!-- Чат -->
+      <!-- Область чата -->
       <div class="chat-container" id="chatContainer">
         <div class="messages-list" id="messageList"></div>
       </div>
@@ -32,29 +39,28 @@
       </div>
     </div>
 
-    <!-- Правая панель: пользователи -->
+    <!-- Правая панель: пользователи онлайн -->
     <div class="sidebar users" id="userList">
-      <div class="user-header">Онлайн</div>
-      <!-- Пользователи будут здесь -->
+      <div class="user-header">ОНЛАЙН</div>
+      <!-- Сюда подгружаются пользователи -->
     </div>
   </div>
 
   <!-- Экран входа -->
   <div class="auth-screen" id="authScreen">
     <div class="auth-box">
-      <h2>💬HWT</h2>
+      <h2>💬 GigaChat</h2>
       <p>Войдите, чтобы начать общение</p>
       <button onclick="showLogin()">Войти</button>
       <button onclick="showRegister()">Регистрация</button>
     </div>
   </div>
 
-  <!-- Модалки -->
+  <!-- Модальные окна -->
   <div id="modal"></div>
 
-  <!-- Supabase -->
+  <!-- Подключение Supabase и скрипта -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="script.js"></script>
 </body>
 </html>
-
