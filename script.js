@@ -578,7 +578,10 @@ async function startCall(userId) {
       payload: {
         from: currentUser.id,
         to: userId,
-        offer: pc.localDescription,
+        offer: {
+          type: offer.type,
+          sdp: offer.sdp
+        },
         callerName: currentUser.email.split('@')[0]
       }
     });
@@ -623,7 +626,12 @@ async function acceptCall() {
   stream.getTracks().forEach(track => pc.addTrack(track, stream));
 
   try {
-    await pc.setRemoteDescription(new RTCSessionDescription(offer));
+    // Устанавливаем offer
+    await pc.setRemoteDescription(new RTCSessionDescription({
+      type: offer.type,
+      sdp: offer.sdp
+    }));
+
     const answer = await pc.createAnswer();
     await pc.setLocalDescription(answer);
 
@@ -634,7 +642,10 @@ async function acceptCall() {
       payload: {
         from: currentUser.id,
         to: from,
-        answer: pc.localDescription
+        answer: {
+          type: answer.type,
+          sdp: answer.sdp
+        }
       }
     });
 
@@ -646,6 +657,7 @@ async function acceptCall() {
     rejectCall();
   }
 }
+
 
 // Отклонить звонок
 function rejectCall() {
@@ -668,17 +680,34 @@ function handleAnswer(payload) {
   const { from, answer } = payload;
   const pc = peerConnections[from];
   if (!pc) return;
-  pc.setRemoteDescription(new RTCSessionDescription(answer));
+
+  pc.setRemoteDescription(new RTCSessionDescription({
+    type: answer.type,
+    sdp: answer.sdp
+  })).catch(err => {
+    console.error('Ошибка установки remote description:', err);
+  });
+
   hideCallingUI();
   showCallIndicator(from, 'На связи...');
 }
 
+
 // ICE кандидаты
 function handleIceCandidate(payload) {
-  const { from, candidate } = payload;
+  const { from, candidate, sdpMid, sdpMLineIndex } = payload;
   const pc = peerConnections[from];
   if (!pc) return;
-  pc.addIceCandidate(new RTCIceCandidate(candidate));
+
+  const iceCandidate = new RTCIceCandidate({
+    candidate,
+    sdpMid,
+    sdpMLineIndex
+  });
+
+  pc.addIceCandidate(iceCandidate).catch(err => {
+    console.error('Ошибка добавления ICE кандидата:', err);
+  });
 }
 
 // Создание WebRTC соединения
@@ -725,7 +754,13 @@ function endCall() {
     channel.send({
       type: 'broadcast',
       event: 'call_hangup',
-      payload: { from: currentUser.id, to: currentCall }
+      payload: { 
+        from: currentUser.id, 
+        to: userId, 
+        candidate: e.candidate.candidate,
+        sdpMid: e.candidate.sdpMid,
+        sdpMLineIndex: e.candidate.sdpMLineIndex
+      }
     });
   }
 
@@ -887,4 +922,5 @@ window.addEventListener('load', async () => {
     showAuthScreen();
   }
 });
+
 
