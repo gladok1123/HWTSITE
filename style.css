@@ -28,7 +28,7 @@ body {
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
 }
 
-/* === ЛЕВАЯ ПАНЕЛЬ === */
+/* === ЛЕВАЯ ПАНЕЛЬ: Серверы и ЛС === */
 .sidebar {
   z-index: 10;
   user-select: none;
@@ -46,7 +46,47 @@ body {
   flex-shrink: 0;
 }
 
-.server-icon,
+/* === КНОПКА ОБЩЕГО ЧАТА === */
+.server-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 8px;
+  background: #7289da;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin: 8px 0;
+}
+
+.server-icon:hover {
+  background: #677bc4;
+  transform: scale(1.05);
+}
+
+/* === РАЗДЕЛИТЕЛЬ === */
+.divider {
+  width: 28px;
+  height: 2px;
+  background: #4f545c;
+  margin: 12px 0;
+}
+
+/* === НЕДАВНИЕ ЛИЧНЫЕ ЧАТЫ === */
+.dm-list {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  margin-top: auto;
+  padding-bottom: 10px;
+}
+
 .dm-item {
   width: 48px;
   height: 48px;
@@ -55,58 +95,28 @@ body {
   align-items: center;
   justify-content: center;
   font-weight: bold;
+  font-size: 18px;
+  color: white;
   cursor: pointer;
   transition: all 0.2s ease;
-  color: white;
   position: relative;
-  margin: 4px 0;
-}
-
-.server-icon {
-  background: #7289da;
-  font-size: 24px;
-}
-
-.dm-item {
-  background: #4f545c;
-  font-size: 18px;
   overflow: hidden;
 }
 
-/* Точка онлайн */
-.dm-item::after,
-.user-avatar-small::after {
+.dm-item::after {
   content: '';
   position: absolute;
   bottom: 2px;
   right: 2px;
   width: 12px;
   height: 12px;
-  background: #43b581;
+  background: #43b581; /* Онлайн */
   border-radius: 50%;
   border: 2px solid #202225;
 }
 
-.server-icon:hover,
 .dm-item:hover {
   transform: scale(1.05);
-}
-
-.divider {
-  width: 28px;
-  height: 2px;
-  background: #4f545c;
-  margin: 10px 0;
-}
-
-.dm-list {
-  margin-top: auto;
-  width: 100%;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 8px;
-  padding-bottom: 10px;
 }
 
 /* === ЗАГОЛОВОК ЧАТА === */
@@ -115,28 +125,36 @@ body {
   border-bottom: 1px solid #202225;
   display: flex;
   align-items: center;
+  justify-content: space-between;
   padding: 0 16px;
   font-size: 16px;
   font-weight: 600;
   color: #dcddde;
   background: #2f3136;
-  justify-content: space-between;
+}
+
+#chatTitle {
+  flex: 1;
 }
 
 .back-btn {
-  font-size: 14px;
-  color: #7289da;
   background: none;
   border: none;
+  font-size: 14px;
+  color: #7289da;
   cursor: pointer;
   font-weight: 500;
+  padding: 6px 10px;
+  border-radius: 4px;
+  transition: background 0.2s;
 }
 
 .back-btn:hover {
+  background: rgba(114, 137, 218, 0.1);
   text-decoration: underline;
 }
 
-/* === ЧАТ === */
+/* === ОБЛАСТЬ ЧАТА === */
 .chat-container {
   flex: 1;
   overflow-y: auto;
@@ -144,6 +162,7 @@ body {
   display: flex;
   flex-direction: column;
   gap: 8px;
+  background: #36393f;
 }
 
 .messages-list {
@@ -170,6 +189,7 @@ body {
   margin-right: 12px;
   flex-shrink: 0;
   position: relative;
+  color: white;
 }
 
 .message .avatar::after {
@@ -189,6 +209,14 @@ body {
   min-width: 0;
 }
 
+.message .header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+  font-size: 15px;
+}
+
 .message .author {
   font-weight: 600;
   color: #ffffff;
@@ -197,7 +225,6 @@ body {
 .message .timestamp {
   color: #72767d;
   font-size: 12px;
-  margin-left: 8px;
 }
 
 .message .text {
@@ -207,7 +234,7 @@ body {
   font-size: 15px;
 }
 
-/* === ВВОД === */
+/* === ПАНЕЛЬ ВВОДА === */
 .input-area {
   padding: 12px 16px 16px;
   display: flex;
@@ -243,6 +270,7 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
+  transition: background 0.2s;
 }
 
 #sendBtn:hover {
@@ -307,9 +335,20 @@ body {
   font-weight: bold;
   font-size: 14px;
   margin-right: 8px;
-  background: #7289da;
-  color: white;
   position: relative;
+  color: white;
+}
+
+.user-avatar-small::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 12px;
+  height: 12px;
+  background: #43b581;
+  border-radius: 50%;
+  border: 2px solid #202225;
 }
 
 .user-name {
@@ -320,11 +359,150 @@ body {
   text-overflow: ellipsis;
 }
 
-/* === АДАПТИВНОСТЬ === */
+/* === ЭКРАН ВХОДА === */
+.auth-screen {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: #1a1a1a;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 100;
+}
+
+.auth-box {
+  text-align: center;
+  padding: 40px 30px;
+  background: #202225;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  color: white;
+  width: 90%;
+  max-width: 400px;
+}
+
+.auth-box h2 {
+  margin-bottom: 12px;
+  font-size: 28px;
+  background: linear-gradient(90deg, #7289da, #5865f2);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.auth-box p {
+  color: #b9bbbe;
+  margin-bottom: 24px;
+  font-size: 15px;
+}
+
+.auth-box button {
+  margin: 0 8px;
+  padding: 12px 24px;
+  border: none;
+  border-radius: 8px;
+  font-size: 15px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.auth-box button:first-child {
+  background: #7289da;
+  color: white;
+}
+
+.auth-box button:last-child {
+  background: #4f545c;
+  color: white;
+}
+
+.auth-box button:hover {
+  opacity: 0.9;
+}
+
+/* === МОДАЛЬНЫЕ ОКНА === */
+#modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 200;
+  display: none;
+}
+
+.modal-content {
+  background: #2f3136;
+  border-radius: 8px;
+  width: 90%;
+  max-width: 400px;
+  border: 1px solid #202225;
+  overflow: hidden;
+}
+
+.modal-header {
+  background: #7289da;
+  color: white;
+  padding: 16px;
+  text-align: center;
+  font-weight: 600;
+  font-size: 18px;
+}
+
+.modal-body {
+  padding: 20px;
+  color: #dcddde;
+}
+
+.modal-body input {
+  width: 100%;
+  padding: 12px;
+  margin: 8px 0;
+  border: 1px solid #4f545c;
+  border-radius: 4px;
+  background: #202225;
+  color: #dcddde;
+}
+
+.modal-footer {
+  padding: 16px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  border-top: 1px solid #202225;
+}
+
+.modal-footer button {
+  padding: 10px 16px;
+  border: none;
+  border-radius: 4px;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.modal-footer button:first-child {
+  background: #4f545c;
+  color: white;
+}
+
+.modal-footer button:last-child {
+  background: #7289da;
+  color: white;
+}
+
+/* === АДАПТИВНОСТЬ (до 768px) === */
 @media (max-width: 768px) {
   .discord-app {
     height: 100vh;
     max-height: 100vh;
+    border-radius: 0;
     flex-direction: column;
   }
 
@@ -335,6 +513,7 @@ body {
     height: 56px;
     overflow-x: auto;
     white-space: nowrap;
+    position: static;
   }
 
   .server-icon,
@@ -342,6 +521,10 @@ body {
     width: 48px;
     height: 48px;
     margin: 0 8px;
+  }
+
+  .divider {
+    display: none;
   }
 
   .dm-list {
@@ -363,23 +546,68 @@ body {
   .users.show {
     transform: translateY(0);
   }
+
+  .channel-header {
+    padding: 0 12px;
+  }
+
+  .back-btn {
+    font-size: 13px;
+    padding: 4px 8px;
+  }
+
+  .chat-container {
+    padding: 16px 12px;
+  }
+
+  .message .avatar {
+    width: 36px;
+    height: 36px;
+    font-size: 14px;
+  }
+
+  .message .author {
+    font-size: 14px;
+  }
+
+  .message .text {
+    font-size: 14px;
+  }
+
+  .input-area {
+    padding: 10px 12px;
+  }
+
+  #messageText {
+    font-size: 14px;
+    padding: 10px 12px;
+  }
+
+  #sendBtn {
+    width: 40px;
+    height: 40px;
+    font-size: 16px;
+  }
 }
 
-.toggle-users-btn {
-  position: absolute;
-  bottom: 16px;
-  right: 16px;
-  width: 56px;
-  height: 56px;
-  border-radius: 50%;
-  background: #7289da;
-  color: white;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 20px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-  cursor: pointer;
-  z-index: 15;
-  border: none;
+/* === КНОПКА "ПОКАЗАТЬ ПОЛЬЗОВАТЕЛЕЙ" (МОБИЛЬНЫЕ) === */
+@media (max-width: 768px) {
+  .toggle-users-btn {
+    position: absolute;
+    bottom: 16px;
+    right: 16px;
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: #7289da;
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    cursor: pointer;
+    z-index: 15;
+    border: none;
+  }
 }
