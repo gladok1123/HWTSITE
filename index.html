@@ -2,86 +2,61 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>HWT</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>GigaChat — WhatsApp</title>
   <link rel="stylesheet" href="style.css" />
 </head>
-  <!-- Скрытый аудио для входящего звука -->
-<audio id="remoteAudio" autoplay></audio>
 <body>
-  <div class="discord-app">
-    <!-- Левая панель: серверы и ЛС -->
-    <div class="sidebar servers">
-      <div class="server-icon" title="Общий чат">💬</div>
-      <div class="divider"></div>
-      <div class="dm-list" id="dmList"></div>
-
-      <!-- Поле поиска ЛС -->
-      <div class="dm-search-container">
-        <input type="text" id="dmSearchInput" placeholder="Ник..." title="Написать в ЛС">
-      </div>
-    </div>
-
-    <!-- Центральная панель: чат -->
-    <div class="main-panel">
-      <!-- Заголовок с кнопкой назад -->
-      <div class="channel-header">
-        <span id="chatTitle"># общий</span>
-        <button id="backBtn" class="back-btn" style="display: none;">← Общий</button>
-      </div>
-
-      <!-- Сообщения -->
-      <div class="chat-container" id="chatContainer">
-        <div class="messages-list" id="messageList"></div>
-      </div>
-
-      <!-- Ввод -->
-      <div class="input-area">
-        <textarea id="messageText" placeholder="Сообщение..." rows="1"></textarea>
-        <button id="sendBtn">➤</button>
-      </div>
-    </div>
-
-    <!-- Правая панель: пользователи -->
-    <div class="sidebar users" id="userList">
-      <div class="user-header">ОНЛАЙН</div>
-    </div>
-  </div>
-
   <!-- Экран входа -->
-  <div class="auth-screen" id="authScreen">
-    <div class="auth-box">
-      <h2>💬 HWT</h2>
-      <p>Войдите, чтобы начать общение</p>
-      <button onclick="showLogin()">Войти</button>
-      <button onclick="showRegister()">Регистрация</button>
+  <div id="authScreen" class="auth-screen">
+    <h2>Войдите в GigaChat</h2>
+    <button onclick="showLogin()">Вход</button>
+    <button onclick="showRegister()">Регистрация</button>
+  </div>
+
+  <!-- Основное приложение -->
+  <div class="whatsapp-app">
+    <!-- Верхняя панель -->
+    <header class="chat-header">
+      <div class="back-btn" style="display:none;" onclick="backToGeneral()">&lt;</div>
+      <div class="avatar-small" id="headerAvatar"></div>
+      <span id="chatTitle"># общий</span>
+      <div class="header-icons">
+        <span>📞</span>
+      </div>
+    </header>
+
+    <!-- Сообщения -->
+    <div class="chat-container" id="chatContainer">
+      <div id="messageList"></div>
+    </div>
+
+    <!-- Панель ввода -->
+    <div class="input-area">
+      <input type="text" id="messageText" placeholder="Сообщение" />
+      <button id="sendBtn">➤</button>
     </div>
   </div>
 
-  <!-- Модалка -->
+  <!-- Модалки -->
   <div id="modal"></div>
 
-  <!-- МОДАЛЬНОЕ ОКНО ЗВОНКА -->
-  <div id="callModal" class="call-modal" style="display: none;">
+  <!-- Звонки -->
+  <div id="callModal" class="call-modal">
     <div class="call-content">
-      <h3 id="callTitle">Звонок</h3>
-      <p id="callMessage">Идёт соединение...</p>
+      <h3 id="callTitle">Входящий звонок</h3>
+      <p id="callMessage">...</p>
       <div class="call-actions">
-        <button id="callAccept" class="call-btn call-accept">Принять</button>
-        <button id="callDecline" class="call-btn call-decline">Отклонить</button>
+        <button id="callDecline">❌</button>
+        <button id="callAccept">✅</button>
       </div>
     </div>
   </div>
 
-  <!-- ИНДИКАТОР АКТИВНОГО ЗВОНКА -->
-  <div id="callIndicator" class="call-indicator" style="display: none;">
-    <div class="avatar" id="callAvatar">?</div>
-    <span id="callStatus">На связи...</span>
-  </div>
+  <!-- Аудио для приёма -->
+  <audio id="remoteAudio" autoplay></audio>
 
-  <!-- Скрипты -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="script.js"></script>
 </body>
 </html>
-
