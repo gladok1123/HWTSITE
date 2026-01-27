@@ -14,27 +14,35 @@
     <button onclick="showRegister()">Регистрация</button>
   </div>
 
-  <!-- Основное приложение -->
+  <!-- Основное приложение: WhatsApp-стиль -->
   <div class="whatsapp-app">
-    <!-- Верхняя панель -->
-    <header class="chat-header">
-      <div class="back-btn" style="display:none;" onclick="backToGeneral()">&lt;</div>
-      <div class="avatar-small" id="headerAvatar"></div>
-      <span id="chatTitle"># общий</span>
-      <div class="header-icons">
-        <span>📞</span>
-      </div>
-    </header>
-
-    <!-- Сообщения -->
-    <div class="chat-container" id="chatContainer">
-      <div id="messageList"></div>
+    <!-- Список чатов (слева на телефоне) -->
+    <div class="chats-list" id="chatsList">
+      <div class="list-header">Чаты</div>
     </div>
 
-    <!-- Панель ввода -->
-    <div class="input-area">
-      <input type="text" id="messageText" placeholder="Сообщение" />
-      <button id="sendBtn">➤</button>
+    <!-- Основной чат (справа или весь экран) -->
+    <div class="chat-area">
+      <!-- Верхняя панель -->
+      <header class="chat-header">
+        <div class="back-btn" style="display:none;" onclick="backToGeneral()">&lt;</div>
+        <div class="avatar-small" id="headerAvatar"></div>
+        <span id="chatTitle"># общий</span>
+        <div class="header-icons">
+          <span onclick="startCall(activeDM)">📞</span>
+        </div>
+      </header>
+
+      <!-- Сообщения -->
+      <div class="chat-container" id="chatContainer">
+        <div id="messageList"></div>
+      </div>
+
+      <!-- Панель ввода -->
+      <div class="input-area">
+        <input type="text" id="messageText" placeholder="Сообщение" />
+        <button id="sendBtn">➤</button>
+      </div>
     </div>
   </div>
 
@@ -60,3 +68,4 @@
   <script src="script.js"></script>
 </body>
 </html>
+
