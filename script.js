@@ -8,8 +8,8 @@ const messageList = document.getElementById('messageList');
 const nav = document.getElementById('nav');
 let currentUser = null;
 let currentAvatarColor = '#7a5ce8';
+let activeDM = null; // null = общий чат
 
-// === Загрузка при старте ===
 window.addEventListener('load', async () => {
   const { data: { session } } = await supabaseClient.auth.getSession();
   currentUser = session?.user || null;
@@ -19,12 +19,11 @@ window.addEventListener('load', async () => {
     setupNav();
     loadMessages();
     startRealtime();
-    showChat(); // Показываем чат
+    showChat();
   } else {
-    renderAuthScreen(); // Показываем вход
+    renderAuthScreen();
   }
 
-  // Отслеживаем авторизацию
   supabaseClient.auth.onAuthStateChange(async (event, session) => {
     currentUser = session?.user || null;
     if (event === 'SIGNED_IN') {
@@ -36,12 +35,12 @@ window.addEventListener('load', async () => {
     } else if (event === 'SIGNED_OUT') {
       currentUser = null;
       currentAvatarColor = '#7a5ce8';
+      activeDM = null;
       renderAuthScreen();
     }
   });
 });
 
-// === Загрузка цвета из базы ===
 async function loadUserSettings() {
   const { data, error } = await supabaseClient
     .from('users')
@@ -50,7 +49,7 @@ async function loadUserSettings() {
     .single();
 
   if (error) {
-    console.warn('Цвет не найден, создаём запись...');
+    console.warn('Цвет не найден, создаём...');
     currentAvatarColor = '#7a5ce8';
     await ensureUserRecord(currentAvatarColor);
   } else {
@@ -58,7 +57,6 @@ async function loadUserSettings() {
   }
 }
 
-// === Сохранение пользователя и цвета ===
 async function ensureUserRecord(color) {
   const { error } = await supabaseClient.from('users').upsert({
     id: currentUser.id,
@@ -69,10 +67,8 @@ async function ensureUserRecord(color) {
   if (error) console.error('Ошибка:', error);
 }
 
-// === Изменение цвета аватарки ===
 async function changeAvatarColor(color) {
   currentAvatarColor = color;
-
   const avatar = document.querySelector('.user-avatar');
   if (avatar) avatar.style.background = color;
 
@@ -86,7 +82,6 @@ async function changeAvatarColor(color) {
   });
 }
 
-// === Навигация ===
 function setupNav() {
   const name = currentUser.email.split('@')[0];
   const firstLetter = name[0].toUpperCase();
@@ -97,7 +92,6 @@ function setupNav() {
   `;
 }
 
-// === Показ экрана входа ===
 function renderAuthScreen() {
   const main = document.getElementById('main');
   if (!main) return;
@@ -109,19 +103,16 @@ function renderAuthScreen() {
     <button onclick="showRegister()" style="margin:8px; min-width:120px; background:#3a3a3c;">Регистрация</button>
   `;
 
-  // Скрываем чат
   document.querySelector('.chat-container').style.display = 'none';
   document.querySelector('.input-area').style.display = 'none';
 }
 
-// === Показ чата ===
 function showChat() {
   document.querySelector('.chat-container').style.display = 'flex';
   document.querySelector('.input-area').style.display = 'flex';
   document.getElementById('main').innerHTML = '';
 }
 
-// === Окна входа/регистрации ===
 function showLogin() {
   const modal = document.createElement('div');
   modal.className = 'modal-overlay';
@@ -160,7 +151,6 @@ function showRegister() {
   document.body.appendChild(modal);
 }
 
-// === Регистрация и вход ===
 async function register() {
   const email = document.getElementById('regEmail').value;
   const password = document.getElementById('regPassword').value;
@@ -188,7 +178,6 @@ async function login() {
   }
 }
 
-// === Закрытие модалок ===
 function closeModal(button) {
   const modal = button?.closest('.profile-modal') || 
                 document.querySelector('.profile-modal') ||
@@ -196,11 +185,12 @@ function closeModal(button) {
   modal?.remove();
 }
 
-// === Профиль ===
 async function openProfile() {
   await loadUserSettings();
   const name = currentUser.email.split('@')[0];
   const colors = ['#7a5ce8', '#e74c3c', '#f39c12', '#2ecc71', '#3498db'];
+
+  const users = await loadUserList();
 
   const modal = document.createElement('div');
   modal.className = 'profile-modal';
@@ -222,6 +212,17 @@ async function openProfile() {
           <p><strong>Имя:</strong> ${name}</p>
           <p><strong>Email:</strong> ${currentUser.email}</p>
         </div>
+
+        <div class="dm-list">
+          <h4 style="color:#aaa; font-size:14px; margin:12px 0 8px;">Личные чаты</h4>
+          ${users.map(user => `
+            <div class="dm-item" onclick="openDM('${user.id}')">
+              <div class="dm-avatar" style="background:${user.avatar_color}">${user.name[0].toUpperCase()}</div>
+              <div class="dm-name">${user.name}</div>
+            </div>
+          `).join('')}
+        </div>
+
         <div class="profile-actions">
           <button onclick="closeModal(this)">Закрыть</button>
           <button onclick="logout()" class="btn-logout">Выйти</button>
@@ -232,13 +233,33 @@ async function openProfile() {
   document.body.appendChild(modal);
 }
 
-// === Выход ===
+async function loadUserList() {
+  const { data, error } = await supabaseClient
+    .from('users')
+    .select('id, email, avatar_color')
+    .neq('id', currentUser.id)
+    .limit(50);
+
+  if (error) return [];
+
+  return data.map(u => ({
+    id: u.id,
+    name: u.email.split('@')[0],
+    avatar_color: u.avatar_color || '#7a5ce8'
+  }));
+}
+
+function openDM(userId) {
+  activeDM = userId;
+  closeModal();
+  loadMessages();
+}
+
 async function logout() {
   await supabaseClient.auth.signOut();
   closeModal();
 }
 
-// === Отправка сообщения ===
 async function sendMessage() {
   const textarea = document.getElementById('messageText');
   const text = textarea.value.trim();
@@ -251,6 +272,7 @@ async function sendMessage() {
     sender_name: sender,
     user_id: currentUser.id,
     avatar_color: currentAvatarColor,
+    dm_with: activeDM,
     created_at: new Date().toISOString(),
   });
 
@@ -272,13 +294,18 @@ document.getElementById('messageText')?.addEventListener('input', function () {
   adjustTextareaHeight(this);
 });
 
-// === Загрузка сообщений ===
 async function loadMessages() {
-  const { data, error } = await supabaseClient
-    .from('messages')
-    .select('*')
-    .order('created_at', { ascending: true })
-    .limit(200);
+  let query = supabaseClient.from('messages').select('*').order('created_at', { ascending: true }).limit(200);
+
+  if (activeDM) {
+    query = query.or(
+      `and(user_id.eq.${currentUser.id},dm_with.eq.${activeDM}),and(user_id.eq.${activeDM},dm_with.eq.${currentUser.id})`
+    );
+  } else {
+    query = query.is('dm_with', null);
+  }
+
+  const { data, error } = await query;
 
   if (error) {
     console.error('Ошибка загрузки:', error);
@@ -324,7 +351,6 @@ function scrollToBottom() {
   messageList.scrollTop = messageList.scrollHeight;
 }
 
-// === Реальное время ===
 function startRealtime() {
   supabaseClient
     .channel('chat')
@@ -333,7 +359,15 @@ function startRealtime() {
       schema: 'public',
       table: 'messages'
     }, (payload) => {
-      addMessageToDOM(payload.new);
+      const msg = payload.new;
+      const isRelevant =
+        !msg.dm_with || // Общее
+        msg.dm_with === currentUser.id ||
+        msg.user_id === currentUser.id;
+
+      if (isRelevant) {
+        addMessageToDOM(msg);
+      }
     })
     .subscribe();
 }
