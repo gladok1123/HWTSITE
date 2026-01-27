@@ -7,32 +7,29 @@
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <div class="background"></div>
   <div class="app" id="app">
     <!-- Header -->
     <header class="header">
       <h1 class="logo">💬 Чат</h1>
-      <nav id="nav">
-        <!-- Аватар или кнопки -->
-      </nav>
+      <nav id="nav"></nav>
     </header>
 
-    <!-- Основной экран -->
+    <!-- Основной экран (вход/регистрация) -->
     <div class="main" id="main"></div>
 
     <!-- Чат -->
-    <div class="chat-container" style="display: none;">
+    <div class="chat-container">
       <div class="messages-list" id="messageList"></div>
     </div>
 
-    <!-- Панель ввода -->
-    <div class="input-area" style="display: none;">
+    <!-- Панель ввода (всегда есть, но скрывается при выходе) -->
+    <div class="input-area">
       <textarea id="messageText" placeholder="Сообщение..." rows="1"></textarea>
       <button id="sendBtn" onclick="sendMessage()">➤</button>
     </div>
   </div>
 
-  <!-- Подключаем Supabase -->
+  <!-- Supabase -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="script.js"></script>
 </body>
