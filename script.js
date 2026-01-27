@@ -22,9 +22,7 @@ const chatTitle = document.getElementById('chatTitle');
 const backBtn = document.getElementById('backBtn');
 const dmSearchInput = document.getElementById('dmSearchInput');
 
-// === ГЛОБАЛЬНЫЕ ФУНКЦИИ (важно: должны быть доступны из HTML) ===
-
-// Эти функции ДОЛЖНЫ быть в глобальной области
+// === ГЛОБАЛЬНЫЕ ФУНКЦИИ (доступны из HTML) ===
 function showLogin() {
   showModal('Вход', `
     <input id="loginEmail" type="email" placeholder="Email">
@@ -56,7 +54,7 @@ window.addEventListener('load', async () => {
       showAuthScreen();
     }
 
-    // Отслеживание входа/выхода
+    // Отслеживаем изменения состояния авторизации
     supabaseClient.auth.onAuthStateChange((event, session) => {
       currentUser = session?.user || null;
       if (event === 'SIGNED_IN') {
@@ -97,7 +95,7 @@ async function loadUserSettings() {
   }
 }
 
-// === СОХРАНЕНИЕ ПОЛЬЗОВАТЕЛЯ ===
+// === СОХРАНЕНИЕ ПОЛЬЗОВАТЕЛЯ В БАЗЕ ===
 async function ensureUserRecord(color) {
   const { error } = await supabaseClient.from('users').upsert({
     id: currentUser.id,
@@ -110,9 +108,7 @@ async function ensureUserRecord(color) {
 
 // === ПОКАЗ ЭКРАНОВ ===
 function showAuthScreen() {
-  if (authScreen) {
-    authScreen.style.display = 'flex';
-  }
+  if (authScreen) authScreen.style.display = 'flex';
   const app = document.querySelector('.discord-app');
   if (app) app.style.display = 'none';
 
@@ -121,9 +117,7 @@ function showAuthScreen() {
 }
 
 function showMainApp() {
-  if (authScreen) {
-    authScreen.style.display = 'none';
-  }
+  if (authScreen) authScreen.style.display = 'none';
   const app = document.querySelector('.discord-app');
   if (app) app.style.display = 'flex';
 
@@ -135,7 +129,7 @@ function showMainApp() {
 // === ОТПРАВКА СООБЩЕНИЯ ===
 document.getElementById('sendBtn')?.addEventListener('click', async () => {
   const textarea = document.getElementById('messageText');
-  const text = textarea.value?.trim();
+  const text = textarea?.value?.trim();
   if (!text) return;
 
   const sender = currentUser?.email?.split('@')[0] || 'Аноним';
@@ -152,7 +146,6 @@ document.getElementById('sendBtn')?.addEventListener('click', async () => {
   ]);
 
   if (error) {
-    console.error('Ошибка отправки:', error);
     alert('Не удалось отправить сообщение');
   } else {
     textarea.value = '';
@@ -160,7 +153,7 @@ document.getElementById('sendBtn')?.addEventListener('click', async () => {
   }
 });
 
-// === РЕГУЛИРОВКА ВЫСОТЫ ТЕКСТА ===
+// === РЕГУЛИРОВКА ВЫСОТЫ ПОЛЯ ===
 function adjustTextareaHeight(el) {
   el.style.height = 'auto';
   el.style.height = Math.min(el.scrollHeight, 120) + 'px';
@@ -193,7 +186,6 @@ async function loadMessages() {
     if (error) throw error;
 
     messageList.innerHTML = '';
-
     if (data.length === 0) {
       const empty = document.createElement('div');
       empty.textContent = 'Нет сообщений';
@@ -202,20 +194,15 @@ async function loadMessages() {
       empty.style.padding = '20px';
       messageList.appendChild(empty);
     } else {
-      data.forEach(msg => {
-        addMessageToDOM(msg);
-        trackRecentDM(msg);
-      });
+      data.forEach(addMessageToDOM);
     }
-
     scrollToBottom();
   } catch (err) {
-    console.error('Ошибка загрузки:', err);
     messageList.innerHTML = '<div style="color:red">Ошибка</div>';
   }
 }
 
-// === ДОБАВЛЕНИЕ СООБЩЕНИЯ ===
+// === ДОБАВЛЕНИЕ СООБЩЕНИЯ В DOM ===
 function addMessageToDOM(msg) {
   if (!messageList) return;
 
@@ -457,6 +444,7 @@ function createUsersToggle() {
   document.body.appendChild(btn);
 }
 
+// === ОБРАБОТКА РЕЗИЗА ===
 window.addEventListener('resize', () => {
   const usersBtn = document.querySelector('.toggle-users-btn');
   const usersPanel = document.querySelector('.users');
@@ -518,7 +506,7 @@ async function register() {
   if (error) {
     alert('Ошибка: ' + error.message);
   } else {
-    alert('Проверьте почту для подтверждения');
+    alert('Регистрация успешна! Проверьте почту.');
     closeModal();
   }
 }
