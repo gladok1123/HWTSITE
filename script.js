@@ -1,61 +1,23 @@
+// === ИНИЦИАЛИЗАЦИЯ SUPABASE ===
 const { createClient } = supabase;
 const supabaseClient = createClient(
   'https://goziubuhrsamwzcvwogw.supabase.co',
   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imdveml1YnVocnNhbXd6Y3Z3b2d3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk0MzEyMTgsImV4cCI6MjA4NTAwNzIxOH0.TVZaFlmWaepg8TrANM0E_LY6f9Ozqdg4SyNS7uGlQGs'
 );
 
+// === ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ ===
 let currentUser = null;
 let currentAvatarColor = '#7a5ce8';
 let activeDM = null; // null = общий чат
 
-// === DOM ===
+// === DOM-ЭЛЕМЕНТЫ ===
 const messageList = document.getElementById('messageList');
 const chatContainer = document.querySelector('.chat-container');
 const userList = document.getElementById('userList');
 const authScreen = document.getElementById('authScreen');
 const modal = document.getElementById('modal');
 
-if (!messageList) console.error('❌ #messageList не найден');
-if (!chatContainer) console.error('❌ .chat-container не найден');
-
-// === Адаптивность: Показать/скрыть пользователей на мобильных ===
-function createUsersToggle() {
-  const btn = document.createElement('button');
-  btn.innerHTML = '👥';
-  btn.className = 'toggle-users-btn';
-  btn.onclick = () => {
-    const usersPanel = document.querySelector('.users');
-    const isVisible = usersPanel.classList.contains('show');
-    usersPanel.classList.toggle('show', !isVisible);
-    btn.innerHTML = isVisible ? '👥' : '✕';
-  };
-  document.body.appendChild(btn);
-}
-
-// Вызов после showMainApp()
-function showMainApp() {
-  authScreen.style.display = 'none';
-  const app = document.querySelector('.discord-app');
-  app.style.display = 'flex';
-
-  // Создаём кнопку только на мобильных
-  if (window.innerWidth <= 768) {
-    setTimeout(createUsersToggle, 500); // Даем время загрузиться
-  }
-}
-
-// Перезагрузка при изменении размера
-window.addEventListener('resize', () => {
-  const usersBtn = document.querySelector('.toggle-users-btn');
-  if (window.innerWidth > 768 && usersBtn) {
-    usersBtn.remove();
-    document.querySelector('.users').classList.remove('show');
-  } else if (window.innerWidth <= 768 && !usersBtn && document.querySelector('.discord-app').style.display !== 'none') {
-    createUsersToggle();
-  }
-});
-
-
+// === ЗАГРУЗКА ПРИ СТАРТЕ ===
 window.addEventListener('load', async () => {
   try {
     const { data: { session } } = await supabaseClient.auth.getSession();
@@ -64,13 +26,14 @@ window.addEventListener('load', async () => {
     if (currentUser) {
       await loadUserSettings();
       showMainApp();
-      await loadMessages(); // Ждём загрузки
+      await loadMessages();
       await loadUserList();
       startRealtime();
     } else {
       showAuthScreen();
     }
 
+    // Отслеживаем изменения авторизации
     supabaseClient.auth.onAuthStateChange(async (event, session) => {
       currentUser = session?.user || null;
       if (event === 'SIGNED_IN') {
@@ -88,7 +51,7 @@ window.addEventListener('load', async () => {
   }
 });
 
-// === Загрузка цвета ===
+// === ЗАГРУЗКА НАСТРОЕК ПОЛЬЗОВАТЕЛЯ ===
 async function loadUserSettings() {
   try {
     const { data, error } = await supabaseClient
@@ -109,7 +72,7 @@ async function loadUserSettings() {
   }
 }
 
-// === Сохранение пользователя ===
+// === СОХРАНЕНИЕ ПОЛЬЗОВАТЕЛЯ В БАЗЕ ===
 async function ensureUserRecord(color) {
   const { error } = await supabaseClient.from('users').upsert({
     id: currentUser.id,
@@ -117,22 +80,35 @@ async function ensureUserRecord(color) {
     avatar_color: color,
     updated_at: new Date().toISOString(),
   });
-  if (error) console.error('Ошибка сохранения:', error);
+  if (error) console.error('Ошибка сохранения пользователя:', error);
 }
 
-// === Экраны ===
+// === ПОКАЗ ЭКРАНОВ ===
 function showAuthScreen() {
   authScreen.style.display = 'flex';
-  document.querySelector('.discord-app')?.classList.add('hidden');
+  const app = document.querySelector('.discord-app');
+  if (app) {
+    app.style.display = 'none';
+  }
+  // Удаляем кнопку пользователей, если есть
+  const toggleBtn = document.querySelector('.toggle-users-btn');
+  if (toggleBtn) toggleBtn.remove();
 }
 
 function showMainApp() {
   authScreen.style.display = 'none';
-  document.querySelector('.discord-app')?.classList.remove('hidden');
-  document.querySelector('.discord-app').style.display = 'flex';
+  const app = document.querySelector('.discord-app');
+  if (app) {
+    app.style.display = 'flex';
+  }
+
+  // Создаём кнопку "Показать пользователей" на мобильных
+  if (window.innerWidth <= 768) {
+    setTimeout(createUsersToggle, 500);
+  }
 }
 
-// === Отправка сообщения ===
+// === ОТПРАВКА СООБЩЕНИЯ ===
 document.getElementById('sendBtn')?.addEventListener('click', async () => {
   const textarea = document.getElementById('messageText');
   const text = textarea.value.trim();
@@ -140,24 +116,27 @@ document.getElementById('sendBtn')?.addEventListener('click', async () => {
 
   const sender = currentUser.email.split('@')[0];
 
-  const { error } = await supabaseClient.from('messages').insert({
-    text,
-    sender_name: sender,
-    user_id: currentUser.id,
-    avatar_color: currentAvatarColor,
-    dm_with: activeDM,
-    created_at: new Date().toISOString(),
-  });
+  const { error } = await supabaseClient.from('messages').insert([
+    {
+      text,
+      sender_name: sender,
+      user_id: currentUser.id,
+      avatar_color: currentAvatarColor,
+      dm_with: activeDM,
+      created_at: new Date().toISOString(),
+    }
+  ]);
 
   if (error) {
     console.error('Ошибка отправки:', error);
-    alert('Не удалось отправить');
+    alert('Не удалось отправить сообщение');
   } else {
     textarea.value = '';
     adjustTextareaHeight(textarea);
   }
 });
 
+// === РЕГУЛИРОВКА ВЫСОТЫ ПОЛЯ ВВОДА ===
 function adjustTextareaHeight(el) {
   el.style.height = 'auto';
   el.style.height = Math.min(el.scrollHeight, 120) + 'px';
@@ -167,7 +146,7 @@ document.getElementById('messageText')?.addEventListener('input', function () {
   adjustTextareaHeight(this);
 });
 
-// === Загрузка сообщений — ФИКС С ФИЛЬТРОМ ===
+// === ЗАГРУЗКА СООБЩЕНИЙ ===
 async function loadMessages() {
   if (!messageList) return;
 
@@ -178,7 +157,7 @@ async function loadMessages() {
     .limit(100);
 
   if (activeDM) {
-    // Личный чат
+    // Личные сообщения
     query = query.or(
       `and(user_id.eq.${currentUser.id},dm_with.eq.${activeDM})`,
       `and(user_id.eq.${activeDM},dm_with.eq.${currentUser.id})`
@@ -192,7 +171,7 @@ async function loadMessages() {
     const { data, error } = await query;
     if (error) throw error;
 
-    messageList.innerHTML = ''; // Очищаем
+    messageList.innerHTML = '';
 
     if (data.length === 0) {
       const empty = document.createElement('div');
@@ -212,6 +191,7 @@ async function loadMessages() {
   }
 }
 
+// === ДОБАВЛЕНИЕ СООБЩЕНИЯ В DOM ===
 function addMessageToDOM(msg) {
   if (!messageList) return;
 
@@ -238,13 +218,14 @@ function addMessageToDOM(msg) {
   scrollToBottom();
 }
 
+// === ПРОКРУТКА ВНИЗ ===
 function scrollToBottom() {
   if (chatContainer) {
     chatContainer.scrollTop = chatContainer.scrollHeight;
   }
 }
 
-// === Пользователи справа ===
+// === ЗАГРУЗКА СПИСКА ПОЛЬЗОВАТЕЛЕЙ ===
 async function loadUserList() {
   if (!userList) return;
 
@@ -260,13 +241,13 @@ async function loadUserList() {
       return;
     }
 
-    // Очищаем
+    // Очищаем, но оставляем заголовок
     const header = userList.querySelector('.user-header');
     userList.innerHTML = '';
     if (header) {
       const h = document.createElement('div');
       h.className = 'user-header';
-      h.textContent = 'Онлайн';
+      h.textContent = 'ОНЛАЙН';
       userList.appendChild(h);
     }
 
@@ -287,14 +268,14 @@ async function loadUserList() {
   }
 }
 
-// === Личные сообщения ===
+// === ПЕРЕКЛЮЧЕНИЕ НА ЛИЧНЫЙ ЧАТ ===
 function openDM(userId) {
   activeDM = userId;
-  console.log('Открываем ЛС с:', userId);
-  loadMessages(); // Перезагружаем
+  console.log('Переход в ЛС с:', userId);
+  loadMessages();
 }
 
-// === Реальное время — ФИКС ===
+// === РЕАЛЬНОЕ ВРЕМЯ (НОВЫЕ СООБЩЕНИЯ) ===
 function startRealtime() {
   supabaseClient
     .channel('chat')
@@ -314,12 +295,48 @@ function startRealtime() {
       }
     })
     .subscribe((status, err) => {
-      if (err) console.error('Realtime ошибка:', err);
-      else console.log('Realtime статус:', status);
+      if (err) {
+        console.error('Realtime ошибка:', err);
+      } else {
+        console.log('Realtime подключён:', status);
+      }
     });
 }
 
-// === Модалки — фикс ===
+// === КНОПКА "ПОКАЗАТЬ ПОЛЬЗОВАТЕЛЕЙ" (МОБИЛЬНЫЕ) ===
+function createUsersToggle() {
+  const existing = document.querySelector('.toggle-users-btn');
+  if (existing) return; // Не создавать дважды
+
+  const btn = document.createElement('button');
+  btn.innerHTML = '👥';
+  btn.className = 'toggle-users-btn';
+  btn.title = 'Показать онлайн';
+  btn.onclick = () => {
+    const usersPanel = document.querySelector('.users');
+    const isVisible = usersPanel.classList.contains('show');
+    usersPanel.classList.toggle('show', !isVisible);
+    btn.innerHTML = isVisible ? '👥' : '✕';
+  };
+  document.body.appendChild(btn);
+}
+
+// === ОБРАБОТКА ИЗМЕНЕНИЯ РАЗМЕРА ОКНА ===
+window.addEventListener('resize', () => {
+  const usersBtn = document.querySelector('.toggle-users-btn');
+  const usersPanel = document.querySelector('.users');
+
+  if (window.innerWidth > 768) {
+    if (usersBtn) usersBtn.remove();
+    if (usersPanel) usersPanel.classList.remove('show');
+  } else {
+    if (!usersBtn && document.querySelector('.discord-app')?.style.display !== 'none') {
+      createUsersToggle();
+    }
+  }
+});
+
+// === МОДАЛЬНЫЕ ОКНА ===
 function showModal(title, body, onConfirm) {
   modal.style.display = 'flex';
   modal.innerHTML = `
@@ -343,6 +360,7 @@ function confirmModal(fn) {
   closeModal();
 }
 
+// === ФОРМЫ ВХОДА / РЕГИСТРАЦИИ ===
 function showLogin() {
   showModal('Вход', `
     <input id="loginEmail" type="email" placeholder="Email">
@@ -357,25 +375,35 @@ function showRegister() {
   `, register);
 }
 
+// === ВХОД ===
 async function login() {
   const email = document.getElementById('loginEmail')?.value;
   const password = document.getElementById('loginPassword')?.value;
-  if (!email || !password) return alert('Заполните поля');
+  if (!email || !password) {
+    alert('Заполните все поля');
+    return;
+  }
 
   const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
-  if (error) alert('Ошибка: ' + error.message);
+  if (error) {
+    alert('Ошибка входа: ' + error.message);
+  }
 }
 
+// === РЕГИСТРАЦИЯ ===
 async function register() {
   const email = document.getElementById('regEmail')?.value;
   const password = document.getElementById('regPassword')?.value;
-  if (!email || !password) return alert('Заполните поля');
+  if (!email || !password) {
+    alert('Заполните все поля');
+    return;
+  }
 
   const { error } = await supabaseClient.auth.signUp({ email, password });
   if (error) {
     alert('Ошибка: ' + error.message);
   } else {
-    alert('Проверьте почту');
+    alert('Проверьте почту для подтверждения регистрации');
+    closeModal();
   }
 }
-
