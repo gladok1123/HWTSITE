@@ -7,12 +7,17 @@
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
+  <!-- Экран входа -->
   <div class="auth-screen" id="authScreen">
-    <h2>Войдите в чат</h2>
-    <input type="text" id="usernameInput" placeholder="Ваше имя" />
+    <h2>🔐 Войдите в WhatsApp</h2>
+    <input type="email" id="emailInput" placeholder="Email" />
+    <input type="password" id="passwordInput" placeholder="Пароль" />
     <button id="loginBtn">Войти</button>
+    <button id="signupBtn">Регистрация</button>
+    <p id="authError" style="color: red; margin-top: 10px; display: none;"></p>
   </div>
 
+  <!-- Основное приложение -->
   <div class="whatsapp-container" id="app" style="display: none;">
     <div class="sidebar">
       <div class="sidebar-header">
@@ -20,19 +25,10 @@
         <div class="menu-icons">⋯</div>
       </div>
       <div class="search-box">
-        <input type="text" placeholder="Поиск или новый чат" />
+        <input type="text" placeholder="Поиск" />
       </div>
-      <div class="chats-list">
-        <div class="chat active">
-          <div class="avatar"></div>
-          <div class="chat-info">
-            <div class="name">Общий чат</div>
-            <div class="last-message">Новый чат на основе WhatsApp</div>
-          </div>
-          <div class="chat-meta">
-            <div class="time">только что</div>
-          </div>
-        </div>
+      <div class="chats-list" id="chatsList">
+        <!-- Чаты будут добавляться динамически -->
       </div>
     </div>
 
@@ -49,7 +45,9 @@
       <div class="messages" id="messages"></div>
 
       <div class="message-input">
-        <button class="emoji-btn">😊</button>
+        <label class="attach-btn">📎
+          <input type="file" id="fileInput" accept="image/*,audio/*" style="display: none;" />
+        </label>
         <input type="text" id="messageInput" placeholder="Сообщение" />
         <button class="send-btn" id="sendBtn">➤</button>
       </div>
