@@ -1,5 +1,6 @@
 import { supabase } from './supabase.js';
 
+// === ЭЛЕМЕНТЫ DOM ===
 const authScreen = document.getElementById('authScreen');
 const app = document.getElementById('app');
 const emailInput = document.getElementById('emailInput');
@@ -17,16 +18,22 @@ const chatsList = document.getElementById('chatsList');
 let currentUser = null;
 let isScrolledToBottom = true;
 
+// === ЗВУК УВЕДОМЛЕНИЯ ===
 const messageSound = new Audio("https://assets.mixkit.co/sfx/preview/mixkit-quick-telegram-notification-930.mp3");
 messageSound.volume = 0.5;
 
+// === АВТОРИЗАЦИЯ ===
 async function signIn() {
   const email = emailInput.value.trim();
   const password = passwordInput.value;
   if (!email || !password) return showError("Введите email и пароль");
 
   const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-  handleAuthResult(data, error);
+  if (error) {
+    showError(error.message);
+  } else if (data.user) {
+    handleAuthResult(data.user);
+  }
 }
 
 async function signUp() {
@@ -35,24 +42,29 @@ async function signUp() {
   if (!email || !password) return showError("Введите email и пароль");
 
   const { data, error } = await supabase.auth.signUp({ email, password });
-  if (error) showError(error.message);
-  else showError("Проверьте почту для подтверждения!", false);
+  if (error) {
+    showError(error.message);
+  } else {
+    // ✅ Даже если email не подтверждён — пользователь создан
+    if (data.user) {
+      handleAuthResult(data.user);
+    } else {
+      showError("Регистрация успешна! Войдите", false);
+    }
+  }
 }
 
 loginBtn.addEventListener('click', signIn);
 signupBtn.addEventListener('click', signUp);
 
-function handleAuthResult(data, error) {
-  if (error) showError(error.message);
-  else if (data.user) {
-    currentUser = data.user;
-    localStorage.setItem('user', JSON.stringify(currentUser));
-    showApp();
-    loadChats();
-    loadMessages();
-    subscribeToMessages();
-    setupStatusIndicator();
-  }
+function handleAuthResult(user) {
+  currentUser = user;
+  localStorage.setItem('user', JSON.stringify(user));
+  showApp();
+  loadChats();
+  loadMessages();
+  subscribeToMessages();
+  setupStatusIndicator();
 }
 
 function showError(msg, isError = true) {
@@ -66,6 +78,7 @@ function showApp() {
   app.style.display = 'flex';
 }
 
+// === ВОССТАНОВЛЕНИЕ СЕССИИ И ТЕМЫ ===
 window.addEventListener('load', async () => {
   const saved = localStorage.getItem('user');
   if (saved) {
@@ -80,6 +93,7 @@ window.addEventListener('load', async () => {
     }
   }
 
+  // Восстановление темы
   const savedTheme = localStorage.getItem('theme');
   if (savedTheme === 'dark') {
     document.body.classList.add('dark-theme');
@@ -87,6 +101,7 @@ window.addEventListener('load', async () => {
   }
 });
 
+// === ЧАТЫ ===
 function loadChats() {
   chatsList.innerHTML = '';
   const chat = document.createElement('div');
@@ -104,18 +119,41 @@ function loadChats() {
   chatsList.appendChild(chat);
 }
 
+// === ФОРМАТИРОВАНИЕ ВРЕМЕНИ ===
+function formatDate(dateStr) {
+  const date = new Date(dateStr);
+  const now = new Date();
+  const yesterday = new Date(now);
+  yesterday.setDate(yesterday.getDate() - 1);
+
+  if (date.toDateString() === now.toDateString()) {
+    return 'сегодня в ' + formatTime(date);
+  }
+  if (date.toDateString() === yesterday.toDateString()) {
+    return 'вчера в ' + formatTime(date);
+  }
+  return date.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' }) + ' в ' + formatTime(date);
+}
+
+function formatTime(date) {
+  return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+}
+
+// === ЗАГРУЗКА СООБЩЕНИЙ ===
 async function loadMessages() {
   const { data, error } = await supabase
     .from('messages')
     .select('*')
     .order('inserted_at', { ascending: true });
 
-  if (error) console.error('Ошибка:', error);
-  else {
-    messagesContainer.innerHTML = '';
-    data.forEach(addMessageToDOM);
-    scrollToBottom();
+  if (error) {
+    console.error('Ошибка загрузки:', error);
+    return;
   }
+
+  messagesContainer.innerHTML = '';
+  data.forEach(addMessageToDOM);
+  scrollToBottom();
 }
 
 function subscribeToMessages() {
@@ -129,36 +167,28 @@ function subscribeToMessages() {
     .subscribe();
 }
 
-function formatDate(dateStr) {
-  const date = new Date(dateStr);
-  const now = new Date();
-  const yesterday = new Date(now);
-  yesterday.setDate(yesterday.getDate() - 1);
-
-  if (date.toDateString() === now.toDateString()) return 'сегодня в ' + formatTime(date);
-  if (date.toDateString() === yesterday.toDateString()) return 'вчера в ' + formatTime(date);
-  return date.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' }) + ' в ' + formatTime(date);
-}
-
-function formatTime(date) {
-  return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-}
-
+// === ОТОБРАЖЕНИЕ СООБЩЕНИЯ ===
 function addMessageToDOM(msg) {
   const isSent = msg.user_id === currentUser.id;
   const sender = isSent ? 'Вы' : 'Собеседник';
 
+  // --- Временная метка ---
   const timeHeader = document.createElement('div');
   timeHeader.className = 'message-time-header';
   timeHeader.textContent = formatDate(msg.inserted_at);
   messagesContainer.appendChild(timeHeader);
 
+  // --- Пузырь ---
   const messageEl = document.createElement('div');
   messageEl.className = `message-bubble ${isSent ? 'sent' : 'received'}`;
 
   let content = '';
-  if (msg.message) content += `<div class="message-text">${escapeHtml(msg.message)}</div>`;
-  if (msg.image_url) content += `<img src="${msg.image_url}" alt="Фото">`;
+  if (msg.message) {
+    content += `<div class="message-text">${escapeHtml(msg.message)}</div>`;
+  }
+  if (msg.image_url) {
+    content += `<img src="${msg.image_url}" alt="Фото" loading="lazy" style="max-width: 280px; border-radius: 12px; margin-top: 8px;">`;
+  }
 
   const readStatus = isSent ? '<span class="read-indicator">✓✓</span>' : '';
   const author = isSent ? '' : `<div class="message-author">${sender}</div>`;
@@ -182,16 +212,21 @@ function escapeHtml(text) {
   return div.innerHTML;
 }
 
+// === ПЛАВНАЯ ПРОКРУТКА ===
 function scrollToBottom() {
   const threshold = 100;
   isScrolledToBottom = messagesContainer.scrollHeight - messagesContainer.scrollTop - messagesContainer.clientHeight < threshold;
   if (isScrolledToBottom) {
-    messagesContainer.scrollTo({ top: messagesContainer.scrollHeight, behavior: 'smooth' });
+    messagesContainer.scrollTo({
+      top: messagesContainer.scrollHeight,
+      behavior: 'smooth'
+    });
   }
 }
 
 messagesContainer.addEventListener('scroll', scrollToBottom);
 
+// === ЗВУК УВЕДОМЛЕНИЯ ===
 function playNotification() {
   if (!isScrolledToBottom && document.hidden) {
     messageSound.play().catch(() => {});
@@ -199,8 +234,14 @@ function playNotification() {
   }
 }
 
+// === ОТПРАВКА СООБЩЕНИЯ ===
 sendBtn.addEventListener('click', sendMessage);
-messageInput.addEventListener('keypress', e => e.key === 'Enter' && sendMessage());
+messageInput.addEventListener('keypress', e => {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    sendMessage();
+  }
+});
 
 async function sendMessage() {
   const text = messageInput.value.trim();
@@ -209,28 +250,48 @@ async function sendMessage() {
 
   if (file) {
     const fileName = `${Date.now()}_${file.name}`;
-    const { error } = await supabase.storage.from('chat-files').upload(fileName, file);
-    if (error) return alert('Ошибка загрузки: ' + error.message);
-    image_url = `${supabase.storageUrl}/object/public/chat-files/${fileName}`;
+    const { error: uploadError } = await supabase.storage
+      .from('chat-files')
+      .upload(fileName, file);
+
+    if (uploadError) {
+      console.error('Ошибка загрузки:', uploadError);
+      alert('Не удалось загрузить файл: ' + uploadError.message);
+      return;
+    }
+
+    // ✅ Получаем публичный URL
+    const { data } = supabase.storage.from('chat-files').getPublicUrl(fileName);
+    image_url = data.publicUrl;
   }
 
   if (!text && !image_url) return;
 
-  const { error } = await supabase.from('messages').insert([{ user_id: currentUser.id, message: text || null, image_url }]);
-  if (error) console.error(error);
-  else {
+  const { error } = await supabase
+    .from('messages')
+    .insert([{ user_id: currentUser.id, message: text || null, image_url }]);
+
+  if (error) {
+    console.error('Ошибка отправки:', error);
+    alert('Ошибка при отправке');
+  } else {
     messageInput.value = '';
     fileInput.value = '';
   }
 }
 
+// === ПЕРЕКЛЮЧЕНИЕ ТЁМНОЙ ТЕМЫ ===
 document.querySelector('.menu-icons').addEventListener('click', () => {
   const isDark = document.body.classList.toggle('dark-theme');
   document.querySelector('.menu-icons').textContent = isDark ? '☀️' : '⋯';
   localStorage.setItem('theme', isDark ? 'dark' : 'light');
 });
 
+// === СТАТУС "ОНЛАЙН" ===
 function setupStatusIndicator() {
   const status = document.querySelector('.status');
-  if (status) status.textContent = 'онлайн';
+  if (status) {
+    status.textContent = 'онлайн';
+    status.style.color = '#4bcf82';
+  }
 }
