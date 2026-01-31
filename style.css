@@ -422,3 +422,85 @@ body {
   font-weight: normal;
   font-style: normal;
 }
+/* === ЭКРАН ВХОДА === */
+.auth-screen {
+  text-align: center;
+  padding: 60px 30px;
+  background: white;
+  border-radius: 20px;
+  box-shadow: var(--shadow);
+  max-width: 400px;
+  width: 90%;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid var(--border);
+}
+
+.auth-screen h2 {
+  margin-bottom: 16px;
+  color: var(--text);
+  font-size: 24px;
+  font-weight: 600;
+}
+
+.auth-screen p {
+  color: var(--subtext);
+  font-size: 14px;
+  margin-bottom: 20px;
+}
+
+.auth-screen input {
+  width: 100%;
+  padding: 14px 16px;
+  margin: 8px 0;
+  border: none;
+  border-radius: 16px;
+  background: white;
+  color: var(--text);
+  font-size: 15px;
+  outline: none;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.05);
+  transition: box-shadow 0.3s ease;
+}
+
+.auth-screen input:focus {
+  box-shadow: 0 0 0 3px rgba(30, 144, 255, 0.3);
+}
+
+.auth-screen button {
+  width: 100%;
+  padding: 14px;
+  margin: 10px 0;
+  border: none;
+  border-radius: 16px;
+  background: var(--highlight);
+  color: white;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(30, 144, 255, 0.3);
+}
+
+.auth-screen button:hover {
+  background: #1a80e0;
+  transform: translateY(-2px);
+}
+
+.auth-screen button#signupBtn {
+  background: transparent;
+  color: var(--highlight);
+  border: 2px solid var(--highlight);
+  box-shadow: none;
+}
+
+.auth-screen button#signupBtn:hover {
+  background: rgba(30, 144, 255, 0.1);
+  transform: translateY(-2px);
+}
+
+#authError {
+  margin-top: 12px;
+  font-size: 14px;
+}
+
