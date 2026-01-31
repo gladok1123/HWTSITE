@@ -11,36 +11,7 @@ body {
   display: flex;
   justify-content: center;
   align-items: center;
-}
-
-.auth-screen {
-  text-align: center;
-  padding: 50px;
-  background: white;
-  border-radius: 12px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
-}
-.auth-screen input {
-  width: 300px;
-  padding: 14px;
-  margin: 10px 0;
-  border: 1px solid #ddd;
-  border-radius: 8px;
-  font-size: 16px;
-  outline: none;
-}
-.auth-screen button {
-  padding: 12px 24px;
-  margin: 0 5px;
-  background: #075e54;
-  color: white;
-  border: none;
-  border-radius: 8px;
-  cursor: pointer;
-  font-size: 16px;
-}
-.auth-screen button:hover {
-  background: #064e4b;
+  transition: background 0.3s;
 }
 
 .whatsapp-container {
@@ -50,11 +21,12 @@ body {
   height: 90vh;
   border-radius: 12px;
   overflow: hidden;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
   background: white;
   border: 1px solid #ddd;
 }
 
+/* Sidebar */
 .sidebar {
   width: 30%;
   background: #f0f2f5;
@@ -76,13 +48,18 @@ body {
   height: 40px;
   border-radius: 50%;
   background: #ccc url('https://via.placeholder.com/40') center/cover;
+  border: 1.5px solid #ddd;
 }
 
 .menu-icons {
   font-size: 24px;
   color: #54656f;
+  cursor: pointer;
 }
 
+.search-box {
+  padding: 8px 12px;
+}
 .search-box input {
   width: 90%;
   margin: 8px auto;
@@ -91,6 +68,7 @@ body {
   border-radius: 8px;
   background: white;
   font-size: 14px;
+  outline: none;
 }
 
 .chats-list {
@@ -103,6 +81,7 @@ body {
   padding: 10px 16px;
   border-bottom: 1px solid #f0f2f5;
   cursor: pointer;
+  transition: background 0.2s;
 }
 .chat:hover {
   background: #e5e5e5;
@@ -119,6 +98,7 @@ body {
   font-weight: 600;
   color: #111b21;
   margin-bottom: 2px;
+  font-size: 15px;
 }
 .last-message {
   font-size: 14px;
@@ -133,7 +113,7 @@ body {
   color: #8696a0;
 }
 
-/* Чат */
+/* Chat Area */
 .chat-area {
   width: 70%;
   display: flex;
@@ -164,56 +144,84 @@ body {
   overflow-y: auto;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
 }
 
-.message {
+.message-time-header {
+  text-align: center;
+  font-size: 12px;
+  color: #8696a0;
+  margin: 10px 0;
+  background: rgba(0,0,0,0.1);
+  padding: 4px 8px;
+  border-radius: 8px;
+  align-self: center;
+}
+
+.message-bubble {
   max-width: 65%;
   display: flex;
   flex-direction: column;
 }
-.bubble {
-  padding: 8px 12px;
-  border-radius: 8px;
-  font-size: 15px;
-  line-height: 1.4;
-  word-wrap: break-word;
+.message-bubble.received {
+  align-self: flex-start;
 }
-.sent .bubble {
-  background: #d9fdd3;
-  border-radius: 8px 8px 0 8px;
-}
-.received .bubble {
-  background: white;
-  border-radius: 8px 8px 8px 0;
+.message-bubble.sent {
+  align-self: flex-end;
 }
 
-.message-meta {
+.message-content {
+  background: white;
+  padding: 8px 12px;
+  border-radius: 8px 8px 0 8px;
+  font-size: 15px;
+  line-height: 1.4;
+  position: relative;
+  color: #111b21;
+}
+.sent .message-content {
+  background: #d9fdd3;
+  border-radius: 8px 8px 8px 0;
+  color: #111b21;
+}
+
+.message-author {
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 4px;
+  color: #54656f;
+}
+
+.message-footer {
   display: flex;
   align-items: center;
   gap: 4px;
   margin-top: 4px;
+  justify-content: flex-end;
 }
-.timestamp {
+.message-timestamp {
   font-size: 11px;
   color: #8696a0;
 }
-.read-status {
-  font-size: 12px;
+.read-indicator {
+  font-size: 14px;
   color: #53bdeb;
 }
 
-.sent {
-  align-self: flex-end;
-}
-.received {
-  align-self: flex-start;
-}
-
-.message img {
+.message-bubble img {
   max-width: 250px;
   border-radius: 8px;
   margin-top: 4px;
+}
+
+.message-bubble {
+  opacity: 0;
+  transform: translateY(10px);
+  transition: all 0.3s ease;
+}
+.message-bubble.show {
+  opacity: 1;
+  transform: translateY(0);
 }
 
 .message-input {
@@ -224,12 +232,6 @@ body {
   border-top: 1px solid #ddd;
 }
 
-.attach-btn {
-  font-size: 24px;
-  color: #54656f;
-  cursor: pointer;
-}
-
 #messageInput {
   flex: 1;
   padding: 10px;
@@ -238,6 +240,7 @@ body {
   border-radius: 8px;
   outline: none;
   background: white;
+  font-size: 15px;
 }
 
 .send-btn {
@@ -245,6 +248,12 @@ body {
   color: #075e54;
   background: none;
   border: none;
+  cursor: pointer;
+}
+
+.attach-btn {
+  font-size: 24px;
+  color: #54656f;
   cursor: pointer;
 }
 
