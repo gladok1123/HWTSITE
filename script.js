@@ -158,7 +158,7 @@ function addMessageToDOM(msg) {
 
   let content = '';
   if (msg.message) content += `<div class="message-text">${escapeHtml(msg.message)}</div>`;
-  if (msg.image_url) content += `<img src="${msg.image_url}" alt="Фото" style="max-width: 250px; border-radius: 8px; margin-top: 4px;">`;
+  if (msg.image_url) content += `<img src="${msg.image_url}" alt="Фото">`;
 
   const readStatus = isSent ? '<span class="read-indicator">✓✓</span>' : '';
   const author = isSent ? '' : `<div class="message-author">${sender}</div>`;
