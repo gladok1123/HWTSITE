@@ -3,64 +3,45 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>WhatsApp Clone</title>
+  <title>ИТД</title>
   <link rel="stylesheet" href="style.css" />
-  <link rel="icon" href="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg" type="image/svg+xml">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💡</text></svg>">
 </head>
 <body>
-  <!-- Экран входа -->
-  <div class="auth-screen" id="authScreen">
-    <h2>🔐 Войдите в WhatsApp</h2>
-    <p>Используйте email для входа или регистрации</p>
-    
-    <input type="email" id="emailInput" placeholder="Email" autocomplete="email" />
-    <input type="password" id="passwordInput" placeholder="Пароль" autocomplete="current-password" />
-    
-    <button id="loginBtn">Войти</button>
-    <button id="signupBtn">Регистрация</button>
-    
-    <p id="authError" style="color: red; margin-top: 10px; display: none;"></p>
+
+  <div class="container">
+    <header>
+      <h1>ИТД</h1>
+    </header>
+
+    <form id="postForm">
+      <div class="form-group">
+        <input type="text" id="authorName" placeholder="Твоё имя" value="Аноним" maxlength="20" />
+        <textarea id="content" placeholder="Что думаешь?" required></textarea>
+      </div>
+      <button type="submit">Опубликовать</button>
+    </form>
+
+    <main id="postsContainer">
+      <p class="loading">Загрузка постов...</p>
+    </main>
   </div>
 
-  <!-- Основное приложение -->
-  <div class="whatsapp-container" id="app" style="display: none;">
-    <!-- Левая панель -->
-    <div class="sidebar">
-      <div class="sidebar-header">
-        <div class="avatar me"></div>
-        <div class="menu-icons">⋯</div>
-      </div>
-      <div class="search-box">
-        <input type="text" placeholder="Поиск чатов" />
-      </div>
-      <div class="chats-list" id="chatsList"></div>
-    </div>
+  <!-- Загрузка Supabase -->
+  <script>
+    function loadScript(src, cb) {
+      const script = document.createElement('script');
+      script.src = src;
+      script.crossOrigin = 'anonymous';
+      script.onload = () => setTimeout(cb, 50);
+      script.onerror = () => {
+        alert('Ошибка загрузки Supabase');
+      };
+      document.head.appendChild(script);
+    }
 
-    <!-- Чат -->
-    <div class="chat-area">
-      <div class="chat-header">
-        <div class="avatar"></div>
-        <div class="user-info">
-          <div class="name">Общий чат</div>
-          <div class="status">загрузка...</div>
-        </div>
-        <div class="chat-actions">⋯</div>
-      </div>
-
-      <div class="messages" id="messages"></div>
-
-      <div class="message-input">
-        <label class="attach-btn">📎
-          <input type="file" id="fileInput" accept="image/*" style="display: none;" />
-        </label>
-        <input type="text" id="messageInput" placeholder="Введите сообщение" />
-        <button class="send-btn" id="sendBtn">➤</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Скрипты -->
-  <script type="module" src="./supabase.js"></script>
-  <script type="module" src="./script.js"></script>
+    loadScript('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2', initApp);
+  </script>
+  <script src="script.js"></script>
 </body>
 </html>
