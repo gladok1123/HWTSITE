@@ -1,305 +1,119 @@
-import { supabase } from './supabase.js';
-
-// === DOM Elements ===
-const authScreen = document.getElementById('authScreen');
-const app = document.getElementById('app');
-const emailInput = document.getElementById('emailInput');
-const passwordInput = document.getElementById('passwordInput');
-const loginBtn = document.getElementById('loginBtn');
-const signupBtn = document.getElementById('signupBtn');
-const authError = document.getElementById('authError');
-
-const messageInput = document.getElementById('messageInput');
-const sendBtn = document.getElementById('sendBtn');
-const fileInput = document.getElementById('fileInput');
-const messagesContainer = document.getElementById('messages');
-const chatsList = document.getElementById('chatsList');
-
-let currentUser = null;
-let isScrolledToBottom = true;
-
-// === Уведомительный звук ===
-const messageSound = new Audio("https://assets.mixkit.co/sfx/preview/mixkit-quick-telegram-notification-930.mp3");
-messageSound.volume = 0.5;
-
-// === Вход ===
-async function signIn() {
-  const email = emailInput.value.trim();
-  const password = passwordInput.value;
-  if (!email || !password) return showError("Введите email и пароль");
-
-  const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-  if (error) {
-    showError(error.message);
-  } else if (data.user) {
-    handleAuthResult(data.user);
-  }
+// === Проверка Supabase ===
+if (typeof createClient === 'undefined') {
+  console.error('❌ Supabase не загружен');
+  document.getElementById('postsContainer').innerHTML = '<p>Ошибка: Supabase не загрузился</p>';
+  throw new Error('Supabase not loaded');
 }
 
-// === Регистрация (без обязательного подтверждения) ===
-async function signUp() {
-  const email = emailInput.value.trim();
-  const password = passwordInput.value;
-  if (!email || !password) return showError("Введите email и пароль");
+// === Настройки ===
+const supabaseUrl = 'https://goziubuhrsamwzcvwogw.supabase.co';
+const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imdveml1YnVocnNhbXd6Y3Z3b2d3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk0MzEyMTgsImV4cCI6MjA4NTAwNzIxOH0.TVZaFlmWaepg8TrANM0E_LY6f9Ozqdg4SyNS7uGlQGs';
 
-  const { data, error } = await supabase.auth.signUp({ email, password });
-  if (error) {
-    showError(error.message);
-  } else {
-    // Даже если email не подтверждён — пользователь создан
-    if (data.user) {
-      handleAuthResult(data.user);
-    } else {
-      showError("Регистрация успешна! Войдите", false);
-    }
-  }
+const supabase = createClient(supabaseUrl, supabaseAnonKey);
+
+// === DOM ===
+const postForm = document.getElementById('postForm');
+const authorNameInput = document.getElementById('authorName');
+const contentInput = document.getElementById('content');
+const postsContainer = document.getElementById('postsContainer');
+
+// === Генерация аватарки по имени ===
+function getAvatar(name) {
+  const firstLetter = name.trim().charAt(0).toUpperCase() || '?';
+  return `<div class="avatar">${firstLetter}</div>`;
 }
 
-loginBtn.addEventListener('click', signIn);
-signupBtn.addEventListener('click', signUp);
-
-function handleAuthResult(user) {
-  currentUser = user;
-  localStorage.setItem('user', JSON.stringify(user));
-  showApp();
-  loadChats();
-  loadMessages();
-  subscribeToMessages();
-  setupStatusIndicator();
-}
-
-function showError(msg, isError = true) {
-  authError.style.display = 'block';
-  authError.style.color = isError ? 'red' : '#075e54';
-  authError.textContent = msg;
-}
-
-function showApp() {
-  authScreen.style.display = 'none';
-  app.style.display = 'flex';
-}
-
-// === Восстановление сессии и темы ===
-window.addEventListener('load', async () => {
-  const saved = localStorage.getItem('user');
-  if (saved) {
-    currentUser = JSON.parse(saved);
-    const { data } = await supabase.auth.getUser();
-    if (data?.user) {
-      showApp();
-      loadChats();
-      loadMessages();
-      subscribeToMessages();
-      setupStatusIndicator();
-    }
-  }
-
-  // Восстановить тему
-  const savedTheme = localStorage.getItem('theme');
-  if (savedTheme === 'dark') {
-    document.body.classList.add('dark-theme');
-    document.querySelector('.menu-icons').textContent = '☀️';
-  }
-});
-
-// === Загрузка списка чатов ===
-function loadChats() {
-  chatsList.innerHTML = '';
-  const chat = document.createElement('div');
-  chat.className = 'chat active';
-  chat.innerHTML = `
-    <div class="avatar"></div>
-    <div class="chat-info">
-      <div class="name">Общий чат</div>
-      <div class="last-message">Добро пожаловать в чат!</div>
-    </div>
-    <div class="chat-meta">
-      <div class="time">только что</div>
-    </div>
-  `;
-  chatsList.appendChild(chat);
-}
-
-// === Форматирование времени ===
-function formatDate(dateStr) {
-  const date = new Date(dateStr);
-  const now = new Date();
-  const yesterday = new Date(now);
-  yesterday.setDate(yesterday.getDate() - 1);
-
-  if (date.toDateString() === now.toDateString()) {
-    return 'сегодня в ' + formatTime(date);
-  }
-  if (date.toDateString() === yesterday.toDateString()) {
-    return 'вчера в ' + formatTime(date);
-  }
-  return date.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' }) + ' в ' + formatTime(date);
-}
-
-function formatTime(date) {
-  return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-}
-
-// === Загрузка сообщений ===
-async function loadMessages() {
+// === Загрузка постов ===
+async function loadPosts() {
   const { data, error } = await supabase
-    .from('messages')
+    .from('posts')
     .select('*')
-    .order('inserted_at', { ascending: true });
+    .order('created_at', { ascending: false });
 
   if (error) {
-    console.error('Ошибка загрузки сообщений:', error);
+    postsContainer.innerHTML = `<p>Ошибка: ${error.message}</p>`;
     return;
   }
 
-  messagesContainer.innerHTML = '';
-  data.forEach(addMessageToDOM);
-  scrollToBottom();
-}
-
-// === Подписка на новые сообщения (Realtime) ===
-function subscribeToMessages() {
-  supabase
-    .channel('public:messages')
-    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, (payload) => {
-      addMessageToDOM(payload.new);
-      playNotification();
-      scrollToBottom();
-    })
-    .subscribe();
-}
-
-// === Добавление сообщения в DOM ===
-function addMessageToDOM(msg) {
-  const isSent = msg.user_id === currentUser.id;
-  const sender = isSent ? 'Вы' : 'Собеседник';
-
-  // --- Временная метка ---
-  const timeHeader = document.createElement('div');
-  timeHeader.className = 'message-time-header';
-  timeHeader.textContent = formatDate(msg.inserted_at);
-  messagesContainer.appendChild(timeHeader);
-
-  // --- Пузырь сообщения ---
-  const messageEl = document.createElement('div');
-  messageEl.className = `message-bubble ${isSent ? 'sent' : 'received'}`;
-
-  let content = '';
-  if (msg.message) {
-    content += `<div class="message-text">${escapeHtml(msg.message)}</div>`;
-  }
-  if (msg.image_url) {
-    content += `<img src="${msg.image_url}" alt="Фото" loading="lazy" style="max-width: 280px; border-radius: 12px; margin-top: 8px;">`;
+  if (data.length === 0) {
+    postsContainer.innerHTML = `<p class="loading">Пока нет постов. Будь первым!</p>`;
+    return;
   }
 
-  const readStatus = isSent ? '<span class="read-indicator">✓✓</span>' : '';
-  const author = isSent ? '' : `<div class="message-author">${sender}</div>`;
+  postsContainer.innerHTML = '';
+  data.forEach(post => {
+    const el = document.createElement('div');
+    el.className = 'post';
+    el.dataset.id = post.id;
 
-  messageEl.innerHTML = `
-    ${author}
-    <div class="message-content">${content}</div>
-    <div class="message-footer">
-      <span class="message-timestamp">${formatTime(new Date(msg.inserted_at))}</span>
-      ${readStatus}
-    </div>
-  `;
+    const likes = post.likes || 0;
+    const liked = post.liked || false;
 
-  messagesContainer.appendChild(messageEl);
-  setTimeout(() => messageEl.classList.add('show'), 10);
-}
+    el.innerHTML = `
+      <div class="post-header">
+        ${getAvatar(post.author_name)}
+        <span class="author">${post.author_name}</span>
+      </div>
+      <div class="content">${post.content}</div>
+      <div class="footer">
+        <span>${new Date(post.created_at).toLocaleString('ru-RU')}</span>
+        <div class="like" data-id="${post.id}" data-liked="${liked}">
+          ❤️ <span>${likes}</span>
+        </div>
+      </div>
+    `;
 
-// === Экранирование HTML (безопасность) ===
-function escapeHtml(text) {
-  const div = document.createElement('div');
-  div.textContent = text;
-  return div.innerHTML;
-}
+    // Лайк
+    const likeBtn = el.querySelector('.like');
+    likeBtn.addEventListener('click', async () => {
+      const id = likeBtn.dataset.id;
+      const isLiked = likeBtn.dataset.liked === 'true';
+      const newLikes = isLiked ? likes - 1 : likes + 1;
 
-// === Плавная прокрутка вниз ===
-function scrollToBottom() {
-  const threshold = 100;
-  isScrolledToBottom = messagesContainer.scrollHeight - messagesContainer.scrollTop - messagesContainer.clientHeight < threshold;
-  if (isScrolledToBottom) {
-    messagesContainer.scrollTo({
-      top: messagesContainer.scrollHeight,
-      behavior: 'smooth'
+      const { error } = await supabase
+        .from('posts')
+        .update({ likes: newLikes })
+        .eq('id', id);
+
+      if (error) {
+        alert('Ошибка');
+        return;
+      }
+
+      likeBtn.dataset.liked = !isLiked;
+      likeBtn.innerHTML = `❤️ <span>${newLikes}</span>`;
     });
-  }
+
+    postsContainer.appendChild(el);
+  });
 }
 
-messagesContainer.addEventListener('scroll', () => {
-  const threshold = 100;
-  isScrolledToBottom = messagesContainer.scrollHeight - messagesContainer.scrollTop - messagesContainer.clientHeight < threshold;
-});
+// === Отправка поста ===
+postForm.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const author = authorNameInput.value.trim() || 'Аноним';
+  const content = contentInput.value.trim();
+  if (!content) return;
 
-// === Звук при новом сообщении ===
-function playNotification() {
-  if (!isScrolledToBottom && document.hidden) {
-    messageSound.play().catch(() => {});
-    if (navigator.vibrate) navigator.vibrate(100);
-  }
-}
-
-// === Отправка сообщения ===
-sendBtn.addEventListener('click', sendMessage);
-messageInput.addEventListener('keypress', e => {
-  if (e.key === 'Enter' && !e.shiftKey) {
-    e.preventDefault();
-    sendMessage();
-  }
-});
-
-async function sendMessage() {
-  const text = messageInput.value.trim();
-  const file = fileInput.files[0];
-  let image_url = null;
-
-  // --- Загрузка фото ---
-  if (file) {
-    const fileName = `${Date.now()}_${file.name}`;
-    const { error: uploadError } = await supabase.storage
-      .from('chat-files')
-      .upload(fileName, file);
-
-    if (uploadError) {
-      console.error('Ошибка загрузки файла:', uploadError);
-      alert('Не удалось загрузить фото: ' + uploadError.message);
-      return;
+  await supabase.from('posts').insert([
+    {
+      author_name: author,
+      content,
+      likes: 0,
+      avatar_url: 'none'
     }
+  ]);
 
-    // ✅ Получаем публичный URL
-    const { data } = supabase.storage.from('chat-files').getPublicUrl(fileName);
-    image_url = data.publicUrl;
-  }
-
-  // --- Отправка в БД ---
-  if (!text && !image_url) return;
-
-  const { error } = await supabase
-    .from('messages')
-    .insert([{ user_id: currentUser.id, message: text || null, image_url }]);
-
-  if (error) {
-    console.error('Ошибка отправки:', error);
-    alert('Ошибка при отправке сообщения');
-  } else {
-    messageInput.value = '';
-    fileInput.value = '';
-  }
-}
-
-// === Переключение тёмной темы ===
-document.querySelector('.menu-icons').addEventListener('click', () => {
-  const isDark = document.body.classList.toggle('dark-theme');
-  document.querySelector('.menu-icons').textContent = isDark ? '☀️' : '⋯';
-  localStorage.setItem('theme', isDark ? 'dark' : 'light');
+  contentInput.value = '';
+  loadPosts();
 });
 
-// === Статус "онлайн" ===
-function setupStatusIndicator() {
-  const status = document.querySelector('.status');
-  if (status) {
-    status.textContent = 'онлайн';
-    status.style.color = '#4bcf82';
-  }
-}
+// === Realtime ===
+supabase
+  .channel('itd-posts')
+  .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'posts' }, () => loadPosts())
+  .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'posts' }, () => loadPosts())
+  .subscribe();
+
+// === Запуск ===
+loadPosts();
