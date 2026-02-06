@@ -33,15 +33,25 @@
       const script = document.createElement('script');
       script.src = src;
       script.crossOrigin = 'anonymous';
-      script.onload = () => setTimeout(cb, 50);
+      script.onload = () => {
+        console.log('✅ Supabase загружен');
+        if (typeof initApp === 'function') {
+          initApp(); // Запускаем приложение
+        } else {
+          console.error('❌ Функция initApp не найдена');
+        }
+      };
       script.onerror = () => {
         alert('Ошибка загрузки Supabase');
       };
       document.head.appendChild(script);
     }
 
-    loadScript('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2', initApp);
+    // Загружаем Supabase
+    loadScript('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2');
   </script>
+
+  <!-- Подключаем наш скрипт ПОСЛЕ загрузки Supabase -->
   <script src="script.js"></script>
 </body>
 </html>
