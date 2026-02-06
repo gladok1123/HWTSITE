@@ -1,26 +1,30 @@
-// Эта функция будет вызвана из index.html после загрузки Supabase
+// === ГЛАВНАЯ ФУНКЦИЯ ПРИЛОЖЕНИЯ ===
 function initApp() {
   console.log('🚀 Приложение запущено');
 
-  // === Настройки Supabase ===
-  const supabaseUrl = 'https://goziubuhrsamwzcvwogw.supabase.co';
-  const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imdveml1YnVocnNhbXd6Y3Z3b2d3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk0MzEyMTgsImV4cCI6MjA4NTAwNzIxOH0.TVZaFlmWaepg8TrANM0E_LY6f9Ozqdg4SyNS7uGlQGs';
+  // Проверяем, доступен ли createClient от Supabase
+  if (typeof createClient === 'undefined') {
+    console.error('❌ Supabase SDK не загрузился');
+    document.getElementById('postsContainer').innerHTML = '<p>Ошибка: Supabase не загрузился</p>';
+    return;
+  }
 
+  // Создаём клиент (supabaseUrl и supabaseAnonKey из supabase.js)
   const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
-  // === DOM ===
+  // === DOM ЭЛЕМЕНТЫ ===
   const postForm = document.getElementById('postForm');
   const authorNameInput = document.getElementById('authorName');
   const contentInput = document.getElementById('content');
   const postsContainer = document.getElementById('postsContainer');
 
-  // === Генерация аватарки ===
+  // === ГЕНЕРАЦИЯ АВАТАРКИ ПО ИМЕНИ ===
   function getAvatar(name) {
-    const firstLetter = name.trim().charAt(0).toUpperCase() || '?';
+    const firstLetter = (name.trim().charAt(0).toUpperCase() || '?');
     return `<div class="avatar">${firstLetter}</div>`;
   }
 
-  // === Загрузка постов ===
+  // === ЗАГРУЗКА ПОСТОВ ИЗ SUPABASE ===
   async function loadPosts() {
     const { data, error } = await supabase
       .from('posts')
@@ -29,6 +33,7 @@ function initApp() {
 
     if (error) {
       postsContainer.innerHTML = `<p>Ошибка: ${error.message}</p>`;
+      console.error(error);
       return;
     }
 
@@ -37,6 +42,7 @@ function initApp() {
       return;
     }
 
+    // Очищаем и рендерим посты
     postsContainer.innerHTML = '';
     data.forEach(post => {
       const el = document.createElement('div');
@@ -59,7 +65,7 @@ function initApp() {
         </div>
       `;
 
-      // Лайк
+      // Обработчик лайка
       const likeBtn = el.querySelector('.like');
       likeBtn.addEventListener('click', async () => {
         const id = likeBtn.dataset.id;
@@ -71,10 +77,11 @@ function initApp() {
           .eq('id', id);
 
         if (error) {
-          alert('Ошибка лайка');
+          alert('Ошибка при лайке');
           return;
         }
 
+        // Обновляем UI
         likeBtn.innerHTML = `❤️ <span>${newLikes}</span>`;
       });
 
@@ -82,7 +89,7 @@ function initApp() {
     });
   }
 
-  // === Отправка поста ===
+  // === ОТПРАВКА НОВОГО ПОСТА ===
   postForm.addEventListener('submit', async (e) => {
     e.preventDefault();
     const author = authorNameInput.value.trim() || 'Аноним';
@@ -98,16 +105,16 @@ function initApp() {
     ]);
 
     contentInput.value = '';
-    loadPosts();
+    loadPosts(); // Обновить ленту
   });
 
-  // === Realtime ===
+  // === REALTIME: автообновление при новых постах и лайках ===
   supabase
-    .channel('itd-posts')
+    .channel('realtime-posts')
     .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'posts' }, () => loadPosts())
     .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'posts' }, () => loadPosts())
     .subscribe();
 
-  // === Запуск ===
+  // === СТАРТ ===
   loadPosts();
 }
