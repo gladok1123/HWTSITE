@@ -27,31 +27,30 @@
     </main>
   </div>
 
-  <!-- Загрузка Supabase -->
-  <script>
-    function loadScript(src, cb) {
-      const script = document.createElement('script');
-      script.src = src;
-      script.crossOrigin = 'anonymous';
-      script.onload = () => {
-        console.log('✅ Supabase загружен');
-        if (typeof initApp === 'function') {
-          initApp(); // Запускаем приложение
-        } else {
-          console.error('❌ Функция initApp не найдена');
-        }
-      };
-      script.onerror = () => {
-        alert('Ошибка загрузки Supabase');
-      };
-      document.head.appendChild(script);
-    }
+  <!-- 1. Подключаем Supabase SDK -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
-    // Загружаем Supabase
-    loadScript('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2');
-  </script>
+  <!-- 2. Ключи доступа -->
+  <script src="supabase.js"></script>
 
-  <!-- Подключаем наш скрипт ПОСЛЕ загрузки Supabase -->
+  <!-- 3. Основная логика (содержит initApp) -->
   <script src="script.js"></script>
+
+  <!-- 4. Запускаем приложение после загрузки всех скриптов -->
+  <script>
+    window.addEventListener('load', () => {
+      if (typeof initApp === 'function') {
+        initApp();
+      } else {
+        console.error('❌ Ошибка: функция initApp не найдена');
+        document.getElementById('postsContainer').innerHTML = `
+          <p style="color: red; text-align: center;">
+            Ошибка загрузки приложения.<br>
+            Проверь подключение скриптов.
+          </p>
+        `;
+      }
+    });
+  </script>
 </body>
 </html>
